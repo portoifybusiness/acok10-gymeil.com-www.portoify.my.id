@@ -1,0 +1,8 @@
+{
+  "name": "acok10@gymeil.com/www.portoify.my.id",
+  "description": "Portoify Apps Project Business Generate Portofolio Digital, Resume/CV. (Last update 6 Juni 2026) Jam 21.00 WIB",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

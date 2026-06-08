@@ -1,0 +1,34 @@
+# Portoify Root Web Server Configuration File (cPanel Apache)
+# Berfungsi untuk mengelola routing SPA React Router dan backend API PHP
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Pass Authorization Header to environment variable in CGI/FastCGI
+  RewriteCond %{HTTP:Authorization} ^(.*)
+  RewriteRule .* - [e=HTTP_AUTHORIZATION:%1]
+
+  # 1. Route public portfolios (e.g., domain.com/u/budi) to api/index.php
+  RewriteRule ^u/([^/]+)/?$ api/index.php?public_portfolio=$1 [QSA,L]
+
+  # 2. Route public resumes (e.g., domain.com/view-resume/usr_budi) to api/index.php
+  RewriteRule ^view-resume/([^/]+)/?$ api/index.php?public_resume=$1 [QSA,L]
+
+  # 2.b Route public cover letters (e.g., domain.com/view-cover/usr_budi) to api/index.php
+  RewriteRule ^view-cover/([^/]+)/?$ api/index.php?public_cover=$1 [QSA,L]
+
+  # 3. Route clean API queries (e.g., domain.com/api/auth/login) to api/index.php
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^api/(.*)$ api/index.php?route=$1 [QSA,L]
+
+  # 4. Fallback for SPA (React Router). Redirect any request that is not an existing file/folder to index.html
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_FILENAME} !-l
+  RewriteRule . /index.html [L]
+</IfModule>
+
+# Optional security: Prevent user from listing directories
+Options -Indexes

@@ -1,0 +1,14 @@
+# Portoify API URL Rewrite Rule
+# Mengarahkan endpoint bersih ke router index.php secara transparan
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Pass Authorization Header to environment variable in CGI/FastCGI
+  RewriteCond %{HTTP:Authorization} ^(.*)
+  RewriteRule .* - [e=HTTP_AUTHORIZATION:%1]
+
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^(.*)$ index.php?route=$1 [QSA,L]
+</IfModule>

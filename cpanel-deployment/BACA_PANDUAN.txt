@@ -1,0 +1,99 @@
+========================================================================
+             PANDUAN DEPLOYMENT PORTOIFY SAAS DI CPANEL (NON-NODEJS)
+========================================================================
+Aplikasi Portoify kini dilengkapi dengan opsi Backend PHP + MySQL murni 
+yang dirancang agar bisa berjalan 100% lancar di cPanel Shared Hosting biasa, 
+tanpa memerlukan fitur instalasi Node.js Server/Git!
+
+Berikut adalah panduan langkah demi langkah cara melakukan deployment dari 
+file komputer Anda ke cPanel:
+
+------------------------------------------------------------------------
+LANGKAH 1: BUILD APLIKASI DI KOMPUTER LOKAL ANDA
+------------------------------------------------------------------------
+1. Ekspor atau download seluruh folder project Portoify ini ke komputer Anda.
+2. Buka Terminal / CMD di folder project di komputer Anda.
+3. Jalankan perintah untuk build file statis React:
+     npm run build
+4. Perintah di atas akan menghasilkan folder bernama "dist" di root project Anda.
+5. Jalankan ZIP pada isi dari folder "dist" tersebut (bukan folder "dist"-nya,
+   tetapi isi file/folder di dalam "dist", seperti index.html, assets/, dll.)
+   menjadi berkas archive bernama "frontend.zip".
+
+------------------------------------------------------------------------
+LANGKAH 2: PERSILAKAN IMPORT DATABASE DI CPANEL (DUA CARA PILIHAN)
+------------------------------------------------------------------------
+PILIHAN A: MENGGUNAKAN INSTALASI OTOMATIS BROWSER (SANGAT MUDAH & DIREKOMENDASIKAN!)
+1. Buat database baru di cPanel murni menggunakan "MySQL Database Wizard" seperti biasa.
+2. Catat detail DB_HOST (biasanya localhost), DB_USER, DB_PASS, dan DB_NAME.
+3. Masukkan data detail tersebut ke file "cpanel-deployment/api/config.php" di komputer Anda.
+4. Unggah folder "api" beserta file "portoify_schema.sql" ke cPanel di folder "public_html/".
+5. Buka tautan browser Anda: https://domainanda.com/api/install.php
+6. Klik tombol merah "Jalankan Migrasi & Seed Skema Database". Selesai!
+
+PILIHAN B: SECARA MANUAL DENGAN phpMyAdmin CPANEL
+1. Masuk ke cPanel admin Anda.
+2. Cari menu "MySQL Database Wizard" untuk membuat database baru:
+   - Buat Nama Database (Contoh: username_portoify).
+   - Buat User Database baru (Contoh: username_portouser) dengan password yang kuat.
+   - Centang "ALL PRIVILEGES" untuk memberikan semua akses user ke database tersebut.
+3. Setelah selesai, kembali ke Home cPanel, lalu buka menu "phpMyAdmin".
+4. Pilih nama database yang baru saja Anda buat di panel sebelah kanan.
+5. Klik menu "Import" di bagian atas.
+6. Klik "Choose File" dan pilih file berikut dari komputer Anda:
+     portoify_schema.sql  (yang ada di folder cpanel-deployment/)
+7. Gulir ke bawah, lalu klik tombol "Import" / "Go" untuk mengeksekusi.
+8. Tabel-tabel database SaaS beserta data demo awal sukses terbuat!
+
+------------------------------------------------------------------------
+LANGKAH 3: CONFIG BACKEND PHP KONEKSI
+------------------------------------------------------------------------
+1. Buka file berikut yang ada di dalam folder komputer Anda:
+     cpanel-deployment/api/config.php
+2. Cari baris di bagian atas dan ganti konfigurasinya dengan detail database Anda:
+     define('DB_HOST', 'localhost'); // Biasanya tetap localhost
+     define('DB_USER', 'ganti_dengan_username_db_anda'); // Contoh: username_portouser
+     define('DB_PASS', 'ganti_dengan_password_db_anda'); // Password user database Anda
+     define('DB_NAME', 'ganti_dengan_nama_db_anda'); // Contoh: username_portoify
+3. Simpan perubahan file tersebut.
+
+------------------------------------------------------------------------
+LANGKAH 4: UPLOAD FILE KE CPANEL (public_html)
+========================================================================
+1. Kembali ke Home cPanel, buka menu "File Manager".
+2. Masuk ke folder "public_html" (root direktori website Anda).
+3. Unggah (Upload) file "frontend.zip" yang sudah kita siapkan di Langkah 1 tadi.
+4. Klik kanan pada file "frontend.zip" di cPanel, kemudian pilih "Extract".
+5. Sekarang file HTML, JS, CSS frontend React sudah ada di public_html.
+6. Unggah folder "api" yang ada di dalam "cpanel-deployment/" ke public_html.
+   Sehingga struktur folder di cPanel Anda tampak seperti ini:
+   
+   public_html/
+   ├── api/
+   │   ├── .htaccess
+   │   ├── config.php
+   │   ├── jwt.php
+   │   └── index.php
+   ├── assets/              (folder css/js hasil build React)
+   ├── .htaccess            (htaccess dari folder cpanel-deployment/)
+   ├── index.html           (index.html hasil build React)
+   └── ... file-file web lainnya
+
+7. Pastikan Anda menyalin file ".htaccess" yang berada di folder "cpanel-deployment/"
+   ke root "public_html/" cPanel Anda. File ini yang bertugas menangani link dinamis
+   SPA React serta mengarahkan client ke API PHP secara transparan.
+
+------------------------------------------------------------------------
+SELESAI! COBA AKSES WEBSITE ANDA
+------------------------------------------------------------------------
+- Kunjungi domain Anda di browser: https://domainanda.com
+- Anda sekarang dapat melakukan Login menggunakan akun database demo asli Laravel/PHP:
+  - Akun Administrator:
+    * Email: admin@portoify.com
+    * Sandi: admin123
+  - Akun User Demo:
+    * Email: budi.gunawan@gmail.com
+    * Sandi: budi123
+- Coba buat Portofolio, edit bio, cetak resume, hingga mengunggah berkas lamaran Anda!
+  Semua tersimpan langsung dan dikelola murni oleh server PHP Apache + MySQL di cPanel Anda.
+========================================================================

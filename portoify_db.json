@@ -1,0 +1,335 @@
+{
+  "users": [
+    {
+      "id": "usr_admin",
+      "email": "admin@portoify.com",
+      "fullName": "Super Admin Portoify",
+      "role": "admin",
+      "isActive": true,
+      "passwordHash": "admin123",
+      "createdAt": "2026-06-04T14:55:45.931Z"
+    },
+    {
+      "id": "usr_budi",
+      "email": "budi.gunawan@gmail.com",
+      "fullName": "Budi Gunawan",
+      "role": "user",
+      "isActive": true,
+      "passwordHash": "budi123",
+      "createdAt": "2026-06-04T14:55:45.931Z"
+    }
+  ],
+  "profiles": [
+    {
+      "userId": "usr_budi",
+      "fullName": "Budi Gunawan",
+      "placeOfBirth": "Surabaya",
+      "dateOfBirth": "1997-04-12",
+      "gender": "Laki-laki",
+      "address": "Jl. Pemuda No. 45, Surabaya",
+      "nik": "3578011204970001",
+      "phone": "081234567890",
+      "photoUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200",
+      "email": "budi.gunawan@gmail.com",
+      "age": 29
+    }
+  ],
+  "portfolios": [
+    {
+      "id": "port_budi",
+      "userId": "usr_budi",
+      "templateId": "tpl_port_1",
+      "title": "Full Stack Engineer & Web Consultant",
+      "aboutMe": "Saya adalah Developer Full Stack yang berfokus menciptakan solusi web efisien, terukur, dan user-friendly. Memiliki pengalaman 3+ tahun mengolah aplikasi berbasis Node.js, React, dan database SQL.",
+      "experiences": [
+        {
+          "company": "Vortex Digital Agency",
+          "role": "Frontend Developer",
+          "duration": "2023 - Sekarang",
+          "jobdesk": "Membangun sistem UI responsif, mengoptimalkan rendering speed halaman web klien hingga 40%, mengimplementasi standar SEO."
+        },
+        {
+          "company": "Karya Mandiri Software",
+          "role": "Web Developer Associate",
+          "duration": "2021 - 2023",
+          "jobdesk": "Bekerja dalam tim berisi 5 developer untuk merawat 12 web portal pemerintahan regional menggunakan Node.js dan Tailwind."
+        }
+      ],
+      "projects": [
+        {
+          "name": "SaaS Payroll System",
+          "description": "Perangkat lunak berbasis React untuk penggajian bulanan HRD otomatis terintegrasi absensi sidik jari.",
+          "link": "https://payroll.demo"
+        },
+        {
+          "name": "E-Commerce Fresh Market",
+          "description": "Aplikasi pengantaran sayur segar online di area Surabaya dengan tracking kurir real-time.",
+          "link": "https://freshmarket.demo"
+        }
+      ],
+      "educations": [
+        {
+          "institution": "Universitas Bina Nusantara",
+          "degree": "S1 Teknik Informatika",
+          "period": "2016 - 2020"
+        }
+      ],
+      "certificates": [
+        "AWS Certified Cloud Practitioner - 2024",
+        "Dicoding Certified React Expert - 2023"
+      ],
+      "phone": "081234567890",
+      "address": "Jl. Pemuda No. 45, Surabaya",
+      "whatsapp": "6281234567890",
+      "instagram": "budi.gunawan",
+      "tiktok": "budicodes",
+      "linkedin": "budi-gunawan-eng",
+      "github": "budigun",
+      "updatedAt": "2026-06-04T14:55:45.931Z"
+    }
+  ],
+  "resumes": [
+    {
+      "id": "res_budi",
+      "userId": "usr_budi",
+      "templateId": "tpl_res_1",
+      "title": "Full Stack Software Engineer Specialist",
+      "aboutMe": "Insinyur Software berlisensi dengan rekam jejak yang solid dalam memimpin siklus pengembangan web komersial dari desain sketsa awal hingga deployment pipeline di cloud.",
+      "experiences": [
+        {
+          "company": "Vortex Digital Agency",
+          "role": "Frontend Developer",
+          "duration": "2023 - Sekarang",
+          "jobdesk": "Optimalisasi SPA React & Vite, integrasi API microservices, dan perataan struktur visual komponen UI."
+        },
+        {
+          "company": "Karya Mandiri Software",
+          "role": "Web Developer Associate",
+          "duration": "2021 - 2023",
+          "jobdesk": "Mengelola database relasional, menulis query SQL teroptimasi, serta membuat integrasi webhooks."
+        }
+      ],
+      "educations": [
+        {
+          "institution": "Universitas Bina Nusantara",
+          "degree": "S1 Teknik Informatika",
+          "period": "2016 - 2020"
+        }
+      ],
+      "certificates": [
+        "AWS Cloud Practitioner Certificate - 2024",
+        "React Professional Certification - 2023"
+      ],
+      "phone": "081234567890",
+      "address": "Jl. Pemuda No. 45, Surabaya",
+      "whatsapp": "6281234567890",
+      "instagram": "budi.gunawan",
+      "tiktok": "budicodes",
+      "linkedin": "budi-gunawan-eng",
+      "github": "budigun",
+      "updatedAt": "2026-06-04T14:55:45.931Z"
+    }
+  ],
+  "covers": [
+    {
+      "id": "cov_budi",
+      "userId": "usr_budi",
+      "templateId": "tpl_cov_1",
+      "companyName": "PT Global Tech Indonesia",
+      "companyAddress": "Gedung Cyber LT 4, Kuningan, Jakarta Selatan",
+      "jobTitle": "Senior Full-Stack Engineer",
+      "letterContent": "Dengan hormat,\n\nBerdasarkan informasi lowongan pekerjaan yang saya dapatkan di portal karir, saya bermaksud untuk mengajukan diri guna bergabung dengan PT Global Tech Indonesia sebagai Senior Full-Stack Engineer.\n\nSaya memiliki latar belakang pendidikan Sarjana Teknik Informatika dari Universitas Bina Nusantara dan pengalaman kerja di bidang pengembangan perangkat lunak selama lebih dari 3 tahun. Selama bekerja di Vortex Digital Agency, saya berhasil mendesain landing pages dengan performa super cepat dan andal.\n\nBesar harapan saya untuk diberikan kesempatan melakukan wawancara langsung demi memaparkan kualifikasi saya lebih mendalam. Demikian surat lamaran ini, atas perhatian Bapak/Ibu saya ucapkan terima kasih.",
+      "updatedAt": "2026-06-04T14:55:45.931Z"
+    }
+  ],
+  "documents": [
+    {
+      "id": "doc_ktp",
+      "userId": "usr_budi",
+      "fileType": "ktp",
+      "fileName": "KTP_Budi_Gunawan.pdf",
+      "filePathUrl": "data:application/pdf;base64,JVBERi0xLjQKJ...",
+      "uploadedAt": "2026-05-15T10:12:00Z"
+    },
+    {
+      "id": "doc_npwp",
+      "userId": "usr_budi",
+      "fileType": "npwp",
+      "fileName": "NPWP_Budi_Gunawan.pdf",
+      "filePathUrl": "data:application/pdf;base64,JVBERi0xLjQKJ...",
+      "uploadedAt": "2026-05-15T10:14:00Z"
+    }
+  ],
+  "packages": [
+    {
+      "id": "pkg_basic",
+      "name": "Paket Basic",
+      "price": 50000,
+      "durationDays": 15,
+      "features": [
+        "Akses Portofolio Digital dengan Template Basic Only",
+        "Akses Resume/CV dengan Template Basic Only",
+        "Buat Surat Lamaran dengan Template Basic Only",
+        "Tidak bisa upload berkas dokumen apapun 🔒",
+        "Dapat mengelola kustom URL Domain khusus",
+        "Masa Aktif Paket selama 15 Hari"
+      ],
+      "isFeatured": false
+    },
+    {
+      "id": "pkg_standard",
+      "name": "Paket Standart",
+      "price": 150000,
+      "durationDays": 30,
+      "features": [
+        "Akses Portofolio Digital dengan Template Standar Only",
+        "Akses Resume/CV dengan Template Standar Only",
+        "Buat Surat Lamaran dengan Template Standar Only",
+        "Upload Dokumen Pendukung Terbatas (maksimal 5 berkas)",
+        "Dokumen diluar batas persyaratan otomatis terkunci oleh sistem 🔒",
+        "Dapat mengelola kustom URL Domain khusus",
+        "Masa Aktif Paket selama 30 Hari"
+      ],
+      "isFeatured": true
+    },
+    {
+      "id": "pkg_premium",
+      "name": "Paket Premium",
+      "price": 375000,
+      "durationDays": 60,
+      "features": [
+        "Akses Portofolio Digital dengan Template Premium, Standar & Basic",
+        "Akses Resume/CV dengan Template Premium, Standar & Basic",
+        "Buat Surat Lamaran dengan Template Premium, Standar & Basic",
+        "Bebas mengunggah semua jenis dokumen pelamar tanpa batas ✨",
+        "Dapat mengelola kustom URL Domain khusus",
+        "Masa Aktif Paket selama 60 Hari"
+      ],
+      "isFeatured": false
+    }
+  ],
+  "subscriptions": [
+    {
+      "userId": "usr_budi",
+      "packageId": "inactive",
+      "packageName": "Belum Berlangganan",
+      "startDate": "2026-05-01T00:00:00Z",
+      "endDate": "2026-06-01T00:00:00Z",
+      "isActive": false,
+      "domainHostingPath": "budi"
+    }
+  ],
+  "templates": [
+    {
+      "id": "tpl_port_1",
+      "name": "Rose Quartz Cosmic Dark",
+      "category": "portfolio",
+      "htmlMarkup": "\n<div class=\"min-h-screen bg-slate-900 text-slate-100 font-sans\">\n  <div class=\"max-w-4xl mx-auto px-6 py-12\">\n    <!-- Header/Hero -->\n    <header class=\"flex flex-col md:flex-row items-center gap-8 border-b border-slate-800 pb-12\">\n      <div class=\"w-32 h-32 rounded-full overflow-hidden border-4 border-rose-500 shadow-xl bg-slate-800 flex-shrink-0\">\n        <img src=\"{{FOTO}}\" alt=\"{{NAMA}}\" class=\"w-full h-full object-cover onerror-fallback\" referrerpolicy=\"no-referrer\" />\n      </div>\n      <div>\n        <span class=\"inline-block px-3 py-1 bg-rose-500/10 text-rose-400 font-mono text-xs rounded-full mb-3 uppercase tracking-wider font-semibold\">Digital Portfolio Portfolio</span>\n        <h1 class=\"text-4xl font-extrabold tracking-tight text-white mb-2\">{{NAMA}}</h1>\n        <p class=\"text-xl text-rose-400 font-medium mb-4\">{{TITLE}}</p>\n        <p class=\"text-slate-400 leading-relaxed max-w-xl\">{{TENTANG_SAYA}}</p>\n      </div>\n    </header>\n\n    <!-- Main Content Grid -->\n    <main class=\"grid grid-cols-1 md:grid-cols-3 gap-8 pt-12\">\n      <!-- Left Column: Skills, Info & Contacts -->\n      <div class=\"space-y-8\">\n        <div>\n          <h3 class=\"text-xs uppercase tracking-widest text-rose-400 font-bold mb-4 font-mono\">Biodata Ringkas</h3>\n          <ul class=\"space-y-3 font-mono text-sm text-slate-300\">\n            <li><strong class=\"text-slate-500\">TTL:</strong> {{TEMPAT_LALIR}}</li>\n            <li><strong class=\"text-slate-500\">Usia:</strong> {{USIA}} Tahun</li>\n            <li><strong class=\"text-slate-500\">Lokasi:</strong> {{ALAMAT}}</li>\n          </ul>\n        </div>\n\n        <div>\n          <h3 class=\"text-xs uppercase tracking-widest text-rose-400 font-bold mb-4 font-mono\">Sertifikat</h3>\n          <div class=\"space-y-2 font-mono text-sm text-slate-300\">\n            {{SERTIFIKAT}}\n          </div>\n        </div>\n\n        <div>\n          <h3 class=\"text-xs uppercase tracking-widest text-rose-400 font-bold mb-4 font-mono\">Hubungi Saya</h3>\n          <div class=\"space-y-3 font-mono text-xs\">\n            <a href=\"tel:{{TELEPON}}\" class=\"block p-3 bg-slate-800 rounded-lg hover:bg-slate-700 transition\">📞 Telefon: {{TELEPON}}</a>\n            <a href=\"https://wa.me/{{WHATSAPP}}\" class=\"block p-3 bg-slate-800 rounded-lg hover:bg-slate-700 transition text-emerald-400\">💬 WhatsApp</a>\n          </div>\n        </div>\n\n        <div>\n          <h3 class=\"text-xs uppercase tracking-widest text-rose-400 font-bold mb-4 font-mono\">Media Sosial</h3>\n          <div class=\"flex flex-wrap gap-2\">\n            {{SOSIAL_MEDIA}}\n          </div>\n        </div>\n      </div>\n\n      <!-- Right Column: Exp & Projects -->\n      <div class=\"md:col-span-2 space-y-12\">\n        <section>\n          <div class=\"flex items-center gap-3 mb-6\">\n            <div class=\"w-2 h-6 bg-rose-500 rounded-full\"></div>\n            <h2 class=\"text-2xl font-bold text-white\">Pengalaman Kerja</h2>\n          </div>\n          <div class=\"space-y-8 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-800 pl-8\">\n            {{PENGALAMAN_KERJA}}\n          </div>\n        </section>\n\n        <section>\n          <div class=\"flex items-center gap-3 mb-6\">\n            <div class=\"w-2 h-6 bg-rose-500 rounded-full\"></div>\n            <h2 class=\"text-2xl font-bold text-white\">Proyek Pilihan</h2>\n          </div>\n          <div class=\"grid grid-cols-1 sm:grid-cols-2 gap-4\">\n            {{PROYEK_SAYA}}\n          </div>\n        </section>\n\n        <section>\n          <div class=\"flex items-center gap-3 mb-4\">\n            <div class=\"w-2 h-6 bg-rose-500 rounded-full\"></div>\n            <h2 class=\"text-2xl font-bold text-white\">Pendidikan</h2>\n          </div>\n          <div class=\"space-y-4 font-mono text-sm text-slate-300\">\n            {{PENDIDIKAN}}\n          </div>\n        </section>\n      </div>\n    </main>\n\n    <footer class=\"border-t border-slate-800 mt-16 pt-8 text-center text-xs text-slate-500\">\n      <p>Portofolio ini di-hosting di <span class=\"text-rose-400 font-semibold font-mono\">Portoify.my.id</span></p>\n    </footer>\n  </div>\n</div>\n",
+      "tier": "standard",
+      "previewUrl": "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=500&auto=format&fit=crop",
+      "description": "Desain apik dengan tata letak modern dan profesional, optimalkan konten serta keindahan visual portofolio digital Anda.",
+      "createdAt": "2026-06-04T14:55:45.931Z"
+    },
+    {
+      "id": "tpl_res_1",
+      "name": "Classic Slate Grid",
+      "category": "resume",
+      "htmlMarkup": "\n<div class=\"min-h-screen bg-neutral-50 text-neutral-800 font-sans py-12 px-6\">\n  <div class=\"max-w-4xl mx-auto bg-white border border-neutral-200 shadow-lg rounded-xl overflow-hidden\">\n    <!-- Header Block -->\n    <div class=\"bg-neutral-900 text-white px-8 py-10 flex flex-col md:flex-row items-center gap-8\">\n      <div class=\"w-28 h-28 rounded-full overflow-hidden border-2 border-white shadow bg-neutral-800 flex-shrink-0\">\n        <img src=\"{{FOTO}}\" alt=\"{{NAMA}}\" class=\"w-full h-full object-cover\" referrerpolicy=\"no-referrer\" />\n      </div>\n      <div class=\"text-center md:text-left\">\n        <h1 class=\"text-3xl font-bold tracking-tight mb-1 text-white\">{{NAMA}}</h1>\n        <p class=\"text-amber-400 font-mono text-sm uppercase tracking-wider mb-3\">{{TITLE}}</p>\n        <p class=\"text-neutral-400 text-sm max-w-2xl leading-relaxed\">{{TENTANG_SAYA}}</p>\n      </div>\n    </div>\n\n    <div class=\"p-8 grid grid-cols-1 md:grid-cols-3 gap-8\">\n      <!-- Info & Contact Panel -->\n      <div class=\"space-y-6\">\n        <div>\n          <h2 class=\"text-xs font-bold uppercase tracking-widest text-neutral-400 mb-3 block\">Info Personal</h2>\n          <ul class=\"space-y-2 text-sm text-neutral-600\">\n            <li><span class=\"font-semibold\">Tempat, Tgl Lahir:</span> <br/> {{TEMPAT_LALIR}}</li>\n            <li><span class=\"font-semibold\">Usia:</span> {{USIA}} Tahun</li>\n            <li><span class=\"font-semibold\">Alamat:</span> <br/> {{ALAMAT}}</li>\n          </ul>\n        </div>\n\n        <div>\n          <h2 class=\"text-xs font-bold uppercase tracking-widest text-neutral-400 mb-3 block\">Hubungi</h2>\n          <ul class=\"space-y-2 text-sm text-neutral-600 font-mono\">\n            <li>📞 {{TELEPON}}</li>\n            <li>💬 {{WHATSAPP}}</li>\n          </ul>\n        </div>\n\n        <div>\n          <h2 class=\"text-xs font-bold uppercase tracking-widest text-neutral-400 mb-3 block\">Sertifikasi</h2>\n          <ul class=\"space-y-2 text-sm text-neutral-600 bullet-list list-disc pl-4\">\n            {{SERTIFIKAT}}\n          </ul>\n        </div>\n\n        <div>\n          <h2 class=\"text-xs font-bold uppercase tracking-widest text-neutral-400 mb-3 block\">Sosial Media</h2>\n          <div class=\"space-y-2 text-sm text-neutral-600\">\n            {{SOSIAL_MEDIA}}\n          </div>\n        </div>\n      </div>\n\n      <!-- Detailed Professional History -->\n      <div class=\"md:col-span-2 space-y-8\">\n        <section>\n          <h2 class=\"text-lg font-bold text-neutral-900 border-b-2 border-neutral-900 pb-2 mb-4\">Pengalaman Kerja</h2>\n          <div class=\"space-y-6\">\n            {{PENGALAMAN_KERJA}}\n          </div>\n        </section>\n\n        <section>\n          <h2 class=\"text-lg font-bold text-neutral-900 border-b-2 border-neutral-900 pb-2 mb-4\">Riwayat Pendidikan</h2>\n          <div class=\"space-y-4\">\n            {{PENDIDIKAN}}\n          </div>\n        </section>\n      </div>\n    </div>\n\n    <!-- Print Button Floating Note -->\n    <div class=\"bg-neutral-100 px-8 py-4 text-center text-xs text-neutral-500 flex justify-between items-center border-t border-neutral-200\">\n      <span>Dibuat secara profesional menggunakan <strong>Portoify.my.id</strong></span>\n      <button onclick=\"window.print()\" class=\"px-3 py-1 bg-neutral-950 text-white hover:bg-neutral-800 rounded font-bold text-xs cursor-pointer print:hidden\">Cetak / Unduh PDF 🖨️</button>\n    </div>\n  </div>\n</div>\n",
+      "tier": "standard",
+      "previewUrl": "https://images.unsplash.com/photo-1586282391129-76a6df230234?w=500&auto=format&fit=crop",
+      "description": "Tata letak bersih dan profesional dengan struktur grid teratur. Sempurna untuk resume/CV karir resume formal yang dinamis.",
+      "createdAt": "2026-06-04T14:55:45.931Z"
+    },
+    {
+      "id": "tpl_res_canva",
+      "name": "Elite Canva Editorial",
+      "category": "resume",
+      "htmlMarkup": "<!-- Canva-style visual canvas design -->",
+      "tier": "premium",
+      "previewUrl": "https://images.unsplash.com/photo-1586282391129-76a6df230234?w=900&auto=format&fit=crop",
+      "description": "Template Resume dengan Katalog JPG/PNG Premium. Tata letak modern dan sangat mudah digunakan untuk kustomisasi dokumen berkualitas tinggi.",
+      "createdAt": "2026-06-04T14:55:45.931Z"
+    },
+    {
+      "id": "tpl_res_canva_minimalist",
+      "name": "Minimalist Slate Canva",
+      "category": "resume",
+      "htmlMarkup": "<!-- Canva-style visual canvas design -->",
+      "tier": "standard",
+      "previewUrl": "https://images.unsplash.com/photo-1590608897129-79da98d15969?w=900&auto=format&fit=crop",
+      "description": "Template Resume Minimalis Modern dengan background visual estetik. Cocok untuk profesional bidang kreatif & teknologi.",
+      "createdAt": "2026-06-04T14:55:45.931Z"
+    },
+    {
+      "id": "tpl_res_pedro",
+      "name": "Pedro Fernandes Editorial",
+      "category": "resume",
+      "htmlMarkup": "\n<div class=\"min-h-screen bg-slate-100 text-slate-850 font-sans py-12 px-6 flex justify-center items-center\">\n  <div class=\"w-[794px] min-h-[1123px] bg-white shadow-2xl relative flex overflow-hidden border border-slate-200\" style=\"width: 794px; min-height: 1123px; -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact;\">\n    \n    <!-- Triangle Background Decors -->\n    <!-- Top-Right Gold corner -->\n    <div class=\"absolute top-0 right-0 w-32 h-32 bg-[#deb87b]\" style=\"clip-path: polygon(100% 0, 0 0, 100% 100%); z-index: 1;\"></div>\n    <!-- Bottom-Left Gold corner -->\n    <div class=\"absolute bottom-0 left-0 w-16 h-16 bg-[#deb87b]\" style=\"clip-path: polygon(0 100%, 0 0, 100% 100%); z-index: 1;\"></div>\n\n    <!-- LEFT SIDEBAR PANEL (bg-[#1c2431]) -->\n    <div class=\"w-[286px] shrink-0 bg-[#1c2431] text-white flex flex-col pt-12 pb-8 px-6 z-10 relative\">\n      <!-- Profile Picture -->\n      <div class=\"flex justify-center mb-8\">\n        <div class=\"w-36 h-36 rounded-full overflow-hidden border-4 border-white shadow-lg bg-[#2d3748]\">\n          <img src=\"{{FOTO}}\" alt=\"{{NAMA}}\" class=\"w-full h-full object-cover\" referrerpolicy=\"no-referrer\" onerror=\"this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 24 24\\' fill=\\'%23cbd5e1\\'><circle cx=\\'12\\' cy=\\'12\\' r=\\'11\\' fill=\\'%23f1f5f9\\' stroke=\\'%23cbd5e1\\' stroke-width=\\'1\\'/><path d=\\'M12 11c1.93 0 3.5-1.57 3.5-3.5S13.93 4 12 4s-3.5 1.57-3.5 3.5S10.07 11 12 11zm0 2c-2.33 0-7 1.17-7 3.5V18h14v-1.5c0-2.33-4.67-3.5-7-3.5z\\' fill=\\'%2394a3b8\\'/></svg>'\" />\n        </div>\n      </div>\n\n      <!-- Left Contents Section -->\n      <div class=\"space-y-8 flex-1\">\n        \n        <!-- DATA DIRI -->\n        <div>\n          <div class=\"bg-[#deb87b] text-[#1c2431] font-bold text-xs uppercase tracking-wider py-1.5 px-4 rounded-r-xl -ml-6 mb-4 font-sans inline-block w-[200px]\">\n            DATA DIRI\n          </div>\n          <div class=\"space-y-3 ps-1\">\n            <div>\n              <p class=\"text-[10px] font-bold text-slate-400 uppercase tracking-wide\">Tempat / Tanggal Lahir</p>\n              <p class=\"text-xs text-white mt-0.5 leading-normal\">{{TEMPAT_LAHIR}}, {{TANGGAL_LAHIR}}</p>\n            </div>\n            <div>\n              <p class=\"text-[10px] font-bold text-slate-400 uppercase tracking-wide\">Jenis Kelamin</p>\n              <p class=\"text-xs text-white mt-0.5\">{{JENIS_KELAMIN}}</p>\n            </div>\n            <div>\n              <p class=\"text-[10px] font-bold text-slate-400 uppercase tracking-wide\">Status</p>\n              <p class=\"text-xs text-white mt-0.5\">Belum menikah</p>\n            </div>\n            <div>\n              <p class=\"text-[10px] font-bold text-slate-400 uppercase tracking-wide\">Kewarganegaraan</p>\n              <p class=\"text-xs text-white mt-0.5\">Indonesia</p>\n            </div>\n          </div>\n        </div>\n\n        <!-- KONTAK -->\n        <div>\n          <div class=\"bg-[#deb87b] text-[#1c2431] font-bold text-xs uppercase tracking-wider py-1.5 px-4 rounded-r-xl -ml-6 mb-4 font-sans inline-block w-[200px]\">\n            KONTAK\n          </div>\n          <div class=\"space-y-3.5 ps-1\">\n            <div class=\"flex items-center gap-2.5 font-mono\">\n              <span class=\"text-sm select-none\">📞</span>\n              <span class=\"text-xs text-white leading-tight break-all font-mono\">{{TELEPON}}</span>\n            </div>\n            <div class=\"flex items-center gap-2.5 font-mono\">\n              <span class=\"text-sm select-none\">✉️</span>\n              <span class=\"text-xs text-white leading-tight break-all font-mono\">{{EMAIL}}</span>\n            </div>\n            <div class=\"flex items-start gap-2.5\">\n              <span class=\"text-sm mt-0.5 select-none font-sans\">📍</span>\n              <span class=\"text-xs text-white leading-snug font-sans\">{{ALAMAT}}</span>\n            </div>\n          </div>\n        </div>\n\n        <!-- SOSIAL MEDIA -->\n        <div>\n          <div class=\"bg-[#deb87b] text-[#1c2431] font-bold text-xs uppercase tracking-wider py-1.5 px-4 rounded-r-xl -ml-6 mb-4 font-sans inline-block w-[200px]\">\n            SOSIAL MEDIA\n          </div>\n          <div class=\"space-y-3 ps-1\">\n            <div class=\"flex items-center gap-2.5\">\n              <span class=\"text-slate-400 font-bold font-mono\">@</span>\n              <span class=\"text-xs text-white leading-tight break-all\">{{SOSIAL_MEDIA}}</span>\n            </div>\n          </div>\n        </div>\n\n      </div>\n    </div>\n\n    <!-- MAIN RIGHT BODY PANEL -->\n    <div class=\"flex-1 bg-white pt-16 pb-12 px-10 flex flex-col justify-between z-10\">\n      <div class=\"space-y-8\">\n        <!-- Header: name & title -->\n        <div class=\"border-b-2 border-slate-200 pb-6 mb-2\">\n          <h1 class=\"text-4xl font-extrabold tracking-tight text-[#1c2431] font-sans uppercase mb-1.5\">{{NAMA}}</h1>\n          <p class=\"text-lg font-medium text-[#deb87b] italic font-sans mb-1\">{{TITLE}}</p>\n        </div>\n\n        <!-- TENTANG SAYA -->\n        <div>\n          <h2 class=\"text-md font-black tracking-wider text-[#1c2431] uppercase mb-1 font-sans\">TENTANG SAYA</h2>\n          <div class=\"w-full h-[1.5px] bg-[#1c2431] mb-3\"></div>\n          <p class=\"text-xs text-slate-600 leading-relaxed font-sans\">{{TENTANG_SAYA}}</p>\n        </div>\n\n        <!-- PENDIDIKAN -->\n        <div>\n          <h2 class=\"text-md font-black tracking-wider text-[#1c2431] uppercase mb-1 font-sans\">PENDIDIKAN</h2>\n          <div class=\"w-full h-[1.5px] bg-[#1c2431] mb-3\"></div>\n          <div class=\"space-y-3.5 text-xs text-slate-700\">\n            {{PENDIDIKAN}}\n          </div>\n        </div>\n\n        <!-- PENGALAMAN KERJA -->\n        <div>\n          <h2 class=\"text-md font-black tracking-wider text-[#1c2431] uppercase mb-1 font-sans\">PENGALAMAN KERJA</h2>\n          <div class=\"w-full h-[1.5px] bg-[#1c2431] mb-3\"></div>\n          <div class=\"space-y-4 text-xs text-slate-700\">\n            {{PENGALAMAN_KERJA}}\n          </div>\n        </div>\n\n        <!-- KEMAMPUAN / SKILL -->\n        <div>\n          <h2 class=\"text-md font-black tracking-wider text-[#1c2431] uppercase mb-1 font-sans\">KEMAMPUAN</h2>\n          <div class=\"w-full h-[1.5px] bg-[#1c2431] mb-3\"></div>\n          <div class=\"flex flex-wrap gap-2 text-xs text-slate-700\">\n            {{SKILL}}\n          </div>\n        </div>\n\n      </div>\n\n      <!-- Footer branding or simple signature -->\n      <div class=\"text-[10px] text-slate-400 font-mono flex justify-between items-center border-t border-slate-100 pt-4 mt-8 print:hidden\">\n        <span>Didukung oleh Portoify.my.id &bull; 100% Desain Pedro Fernandes</span>\n        <button onclick=\"window.print()\" class=\"px-2.5 py-1 bg-[#1c2431] text-[#deb87b] hover:bg-slate-800 rounded font-bold text-xxs transition cursor-pointer\">Cetak / Unduh PDF 🖨️</button>\n      </div>\n    </div>\n\n  </div>\n</div>\n",
+      "tier": "basic",
+      "previewUrl": "https://images.unsplash.com/photo-1512486130939-2c4f79935e4f?w=500&auto=format&fit=crop",
+      "description": "Desain eksklusif dua panel dengan header modern, skema slate navy & gold. Kloning sempurna dari Pedro Fernandes CV set.",
+      "createdAt": "2026-06-04T14:55:45.931Z"
+    },
+    {
+      "id": "tpl_cov_1",
+      "name": "Formal Corporate serif",
+      "category": "cover_letter",
+      "htmlMarkup": "\n<div class=\"min-h-screen bg-slate-50 text-slate-800 font-serif py-16 px-6\">\n  <div class=\"max-w-3xl mx-auto bg-white border border-slate-200 p-12 shadow-md rounded\">\n    <div class=\"text-right text-xs font-mono mb-8 text-slate-400\">\n      Portoify Template Surat Lamaran\n    </div>\n    \n    <!-- Sender Header -->\n    <div class=\"border-b-2 border-slate-800 pb-6 mb-8\">\n      <h2 class=\"text-2xl font-bold tracking-tight text-slate-900 uppercase\">{{NAMA}}</h2>\n      <p class=\"text-sm font-sans text-slate-500 font-mono mt-1\">\n        Alamat: {{ALAMAT}} | TTL: {{TEMPAT_TANGGAL_LAHIR}} ({{USIA}} thn) | Hp: {{TELEPON}}\n      </p>\n    </div>\n\n    <!-- Date & Recipient -->\n    <div class=\"mb-8 font-sans text-sm\">\n      <p class=\"mb-4\">Perihal: Lamaran Pekerjaan - <strong class=\"text-slate-900\">{{JABATAN_DILAMAR}}</strong></p>\n      <p class=\"font-semibold text-slate-900\">Kepada Yth,</p>\n      <p class=\"font-bold text-slate-900\">{{NAMA_PERUSAHAAN}}</p>\n      <p class=\"text-slate-600\">{{ALAMAT_PERUSAHAAN}}</p>\n    </div>\n\n    <!-- Letter Body -->\n    <div class=\"prose prose-slate leading-relaxed text-sm whitespace-pre-wrap font-serif text-slate-700 indent-8 mb-12\">\n      {{ISI_SURAT}}\n    </div>\n\n    <!-- Closing -->\n    <div class=\"flex justify-end pr-12 font-sans text-sm mt-12\">\n      <div class=\"text-center\">\n        <p class=\"mb-16\">Hormat Saya,</p>\n        <p class=\"font-bold hover:underline cursor-pointer border-t border-slate-300 pt-2\">{{NAMA}}</p>\n      </div>\n    </div>\n  </div>\n</div>\n",
+      "tier": "basic",
+      "previewUrl": "https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=500&auto=format&fit=crop",
+      "description": "Desain klasik dengan tipografi serif untuk kesan profesional. Sempurna untuk surat lamaran kerja korporat.",
+      "createdAt": "2026-06-04T14:55:45.931Z"
+    }
+  ],
+  "logs": [
+    {
+      "id": "log_1",
+      "userId": "usr_budi",
+      "userEmail": "budi.gunawan@gmail.com",
+      "message": "Melakukan pendaftaran akun Portoify baru",
+      "timestamp": "2026-05-26T10:00:00Z"
+    },
+    {
+      "id": "log_2",
+      "userId": "usr_budi",
+      "userEmail": "budi.gunawan@gmail.com",
+      "message": "Memperbarui Profil Lengkap",
+      "timestamp": "2026-05-26T10:15:00Z"
+    },
+    {
+      "id": "log_3",
+      "userId": "usr_budi",
+      "userEmail": "budi.gunawan@gmail.com",
+      "message": "Membuat Digital Portfolio Baru",
+      "timestamp": "2026-05-26T10:30:00Z"
+    }
+  ],
+  "sales": [
+    {
+      "month": "Jan",
+      "sales": 12400000
+    },
+    {
+      "month": "Feb",
+      "sales": 14200000
+    },
+    {
+      "month": "Mar",
+      "sales": 11800000
+    },
+    {
+      "month": "Apr",
+      "sales": 15300000
+    },
+    {
+      "month": "Mai",
+      "sales": 15400000
+    }
+  ],
+  "ads": {
+    "leftName": "",
+    "leftScript": "",
+    "rightName": "",
+    "rightScript": ""
+  }
+}

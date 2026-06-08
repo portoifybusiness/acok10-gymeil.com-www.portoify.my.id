@@ -1,0 +1,70 @@
+name: Portoify Auto-Deploy to cPanel
+
+on:
+  push:
+    branches:
+      - main # Ganti dengan branch utama Anda (misal: 'master' atau 'main')
+
+jobs:
+  build-and-deploy:
+    name: Build Frontend & Deploy to cPanel
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout repository Anda
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. Setup Node.js environment
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      # 3. Install Dependencies dan Compile Build React dengan Vite
+      - name: Install & Build Frontend
+        run: |
+          npm ci
+          npm run build
+
+      # 4. Satukan Assets React (dari dist/) dengan File API PHP (dari cpanel-deployment/)
+      - name: Prepare cPanel Files
+        run: |
+          # Buat direktori temporary untuk staging file yang siap diunggah
+          mkdir -p cpanel_deploy
+          
+          # Copy file static HTML & JS/CSS hasil kompilasi Vite
+          cp -r dist/* cpanel_deploy/
+          
+          # Copy file API PHP (.htaccess, folder api/, dsb)
+          if [ -d "cpanel-deployment/api" ]; then
+            cp -r cpanel-deployment/api cpanel_deploy/
+          fi
+          
+          if [ -f "cpanel-deployment/.htaccess" ]; then
+            cp cpanel-deployment/.htaccess cpanel_deploy/
+          fi
+
+      # 5. Jalankan sinkronisasi upload file ke server FTP/SFTP cPanel Anda
+      - name: FTP/SFTP Deploy
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          # Port default FTP adalah 21, SFTP adalah 22
+          port: ${{ secrets.FTP_PORT || 21 }}
+          # Folder lokal yang ingin diunggah
+          local-dir: ./cpanel_deploy/
+          # Target directory on cPanel
+          server-dir: ./public_html/
+          # Protocol to deploy with (ftp, ftps, or ftps-legacy)
+          protocol: ftp
+          # Allow unsecure fallback if the TLS certificate is self-signed or unsupported
+          security: loose
+          # Melewatkan file history git demi kecepatan
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
