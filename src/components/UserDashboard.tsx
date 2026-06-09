@@ -64,6 +64,150 @@ import {
   ActivityLog 
 } from "../types";
 
+// --- HELPER UNTUK TATA LETAK DINAMIS ---
+function estimateTextHeight(text: string, fontSize: number, fontFamily: string, width: number, lineHeight: number) {
+  if (!text) return 0;
+  
+  let canvas: HTMLCanvasElement | null = null;
+  let context: CanvasRenderingContext2D | null = null;
+  try {
+    canvas = document.createElement('canvas');
+    context = canvas.getContext('2d');
+  } catch (e) {
+    // fallback
+  }
+  
+  if (context) {
+    context.font = `${fontSize}px "${fontFamily}"`;
+  }
+  
+  const paragraphs = text.split('\n');
+  if (!width) {
+    return paragraphs.length * fontSize * lineHeight;
+  }
+  
+  let totalLines = 0;
+  for (const para of paragraphs) {
+    if (para.trim() === "") {
+      totalLines += 1;
+      continue;
+    }
+    const words = para.split(/\s+/);
+    let currentLine = "";
+    let paraLines = 0;
+    
+    for (const word of words) {
+      if (!word) continue;
+      const testLine = currentLine ? currentLine + " " + word : word;
+      let isOver = false;
+      if (context) {
+        const metrics = context.measureText(testLine);
+        isOver = metrics.width > width;
+      } else {
+        isOver = (testLine.length * (fontSize * 0.55)) > width;
+      }
+      
+      if (isOver && currentLine !== "") {
+        paraLines++;
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
+    }
+    if (currentLine) {
+      paraLines++;
+    }
+    totalLines += Math.max(1, paraLines);
+  }
+  
+  return totalLines * fontSize * lineHeight;
+}
+
+function getElementHeight(el: any, textMapping: Record<string, string>): number {
+  if (el.type === "circle") {
+    return (el.radius || el.width / 2 || 40) * 2;
+  }
+  if (el.type === "rect") {
+    return el.height || 120;
+  }
+  if (el.type === "image") {
+    return el.height || 120;
+  }
+  if (el.type === "text") {
+    let textStr = el.text || "";
+    if (textMapping) {
+      Object.entries(textMapping).forEach(([key, value]) => {
+        textStr = textStr.split(key).join(value || "");
+      });
+    }
+    
+    const fontSize = el.fontSize || 12;
+    const fontFamily = el.fontFamily || "Inter";
+    const width = el.width;
+    const lineHeight = el.lineHeight || 1.2;
+    
+    return estimateTextHeight(textStr, fontSize, fontFamily, width, lineHeight);
+  }
+  return 0;
+}
+
+const resolveElementLayout = (
+  elId: string, 
+  elements: any[], 
+  resolved: Record<string, { y: number; height: number }>,
+  textMapping: Record<string, string>,
+  visited: Set<string> = new Set()
+): { y: number; height: number } => {
+  if (resolved[elId]) {
+    return resolved[elId];
+  }
+  
+  const el = elements.find(item => item.id === elId);
+  if (!el) {
+    return { y: 0, height: 0 };
+  }
+  
+  if (visited.has(elId)) {
+    return { y: el.y, height: getElementHeight(el, textMapping) };
+  }
+  visited.add(elId);
+  
+  let finalY = el.y;
+  let finalHeight = getElementHeight(el, textMapping);
+  
+  if (el.relativeTo) {
+    const parent = elements.find(item => item.id === el.relativeTo);
+    if (parent) {
+      const parentResolved = resolveElementLayout(parent.id, elements, resolved, textMapping, visited);
+      const gap = el.relativeGap !== undefined ? el.relativeGap : 15;
+      finalY = parentResolved.y + parentResolved.height + gap;
+    }
+  }
+  
+  resolved[elId] = { y: finalY, height: finalHeight };
+  return resolved[elId];
+};
+
+function getResolvedCanvasElements(elements: any[], textMapping: Record<string, string>) {
+  const resolved: Record<string, { y: number; height: number }> = {};
+  
+  elements.forEach(el => {
+    resolveElementLayout(el.id, elements, resolved, textMapping);
+  });
+  
+  return elements.map(el => {
+    const res = resolved[el.id];
+    if (res) {
+      return {
+        ...el,
+        y: res.y
+      };
+    }
+    return el;
+  });
+}
+// ----------------------------------------
+
 const calculateAge = (birthDateStr: string) => {
   if (!birthDateStr) return 0;
   const today = new Date();
@@ -520,6 +664,7 @@ export default function UserDashboard({ currentUser, onLogout }: UserDashboardPr
   const [canvasBgColor, setCanvasBgColor] = useState("#ffffff");
   const stageRef = useRef<any>(null);
   const transformerRef = useRef<any>(null);
+  const userTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const mainContentRef = useRef<HTMLElement | null>(null);
@@ -663,6 +808,58 @@ export default function UserDashboard({ currentUser, onLogout }: UserDashboardPr
     setActiveCanvasTemplate(template);
   };
 
+  const handleUserElementDragEnd = (elId: string, dragX: number, dragY: number) => {
+    const el = canvasElements.find(item => item.id === elId);
+    if (!el) return;
+    
+    let nextY = dragY;
+    let nextGap = el.relativeGap;
+    
+    if (el.relativeTo) {
+      const parent = canvasElements.find(item => item.id === el.relativeTo);
+      if (parent) {
+        const resolved = getResolvedCanvasElements(canvasElements, getTextMapping());
+        const parentResolved = resolved.find(item => item.id === parent.id);
+        const parentY = parentResolved ? parentResolved.y : parent.y;
+        const parentHeight = getElementHeight(parent, getTextMapping());
+        nextGap = Math.round(dragY - (parentY + parentHeight));
+      }
+    }
+    
+    const updated = canvasElements.map(item => 
+      item.id === elId 
+        ? { ...item, x: dragX, y: nextY, relativeGap: nextGap } 
+        : item
+    );
+    updateElementsAndHistory(updated);
+  };
+
+  const handleUserElementTransformEnd = (elId: string, dragX: number, dragY: number, sizeAttrs: any) => {
+    const el = canvasElements.find(item => item.id === elId);
+    if (!el) return;
+    
+    let nextY = dragY;
+    let nextGap = el.relativeGap;
+    
+    if (el.relativeTo) {
+      const parent = canvasElements.find(item => item.id === el.relativeTo);
+      if (parent) {
+        const resolved = getResolvedCanvasElements(canvasElements, getTextMapping());
+        const parentResolved = resolved.find(item => item.id === parent.id);
+        const parentY = parentResolved ? parentResolved.y : parent.y;
+        const parentHeight = getElementHeight(parent, getTextMapping());
+        nextGap = Math.round(dragY - (parentY + parentHeight));
+      }
+    }
+    
+    const updated = canvasElements.map(item => 
+      item.id === elId 
+        ? { ...item, x: dragX, y: nextY, relativeGap: nextGap, ...sizeAttrs } 
+        : item
+    );
+    updateElementsAndHistory(updated);
+  };
+
   const getSortedCanvasElements = () => {
     return [...canvasElements].sort((a, b) => {
       const getWeight = (el: any) => {
@@ -725,10 +922,10 @@ export default function UserDashboard({ currentUser, onLogout }: UserDashboardPr
         const role = exp.role || "Jabatan";
         const dur = exp.duration || "Periode Kerja";
         const desk = exp.jobdesk || "-";
-        return `• ${comp}\n  ${role} — ${dur}\n\n  ${desk}`;
+        return `• ${comp}\n${role} — ${dur}\n\n${desk}`;
       }).join("\n\n");
     } else {
-      expStr = "• SOLUSINDO RAYA\n  Junior Frontend Web Developer — 2021 - 2023\n\n  Mengatur visual interface website dengan optimasi performa 30%.\n\n• CREATIVE AGENCY\n  UI Designer Internship — 2020\n\n  Membantu mendesain draf kawat draf (wireframe) halaman landing page.";
+      expStr = "• SOLUSINDO RAYA\nJunior Frontend Web Developer — 2021 - 2023\n\nMengatur visual interface website dengan optimasi performa 30%.\n\n• CREATIVE AGENCY\nUI Designer Internship — 2020\n\nMembantu mendesain draf kawat draf (wireframe) halaman landing page.";
     }
     textMapping["{{PENGALAMAN_KERJA}}"] = expStr;
 
@@ -3865,8 +4062,8 @@ WhatsApp: ${whatsappKandidat}`;
           const educationsVal = (resEdus.filter(e => e.institution).length > 0 ? resEdus.filter(e => e.institution) : (resume?.educations || [])).map(e => `${e.institution} (${e.period || ""})\n- ${e.degree}`).join("\n\n");
           const activeExperiences = resExps.filter(e => e.company).length > 0 ? resExps.filter(e => e.company) : (resume?.experiences || []);
           const expsVal = activeExperiences.length > 0 
-            ? activeExperiences.map(e => `• ${e.company ? e.company.toUpperCase() : "PERUSAHAAN"}\n  ${e.role || "Jabatan"} — ${e.duration || ""}\n\n  ${e.jobdesk || ""}`).join("\n\n")
-            : "• SOLUSINDO RAYA\n  Junior Frontend Web Developer — 2021 - 2023\n\n  Mengatur visual interface website dengan optimasi performa 30%.\n\n• CREATIVE AGENCY\n  UI Designer Internship — 2020\n\n  Membantu mendesain draf kawat draf (wireframe) halaman landing page.";
+            ? activeExperiences.map(e => `• ${e.company ? e.company.toUpperCase() : "PERUSAHAAN"}\n${e.role || "Jabatan"} — ${e.duration || ""}\n\n${e.jobdesk || ""}`).join("\n\n")
+            : "• SOLUSINDO RAYA\nJunior Frontend Web Developer — 2021 - 2023\n\nMengatur visual interface website dengan optimasi performa 30%.\n\n• CREATIVE AGENCY\nUI Designer Internship — 2020\n\nMembantu mendesain draf kawat draf (wireframe) halaman landing page.";
           const projVal = (resProjects.filter(p => p.name).length > 0 ? resProjects.filter(p => p.name) : (resume?.projects || portfolio?.projects || [])).map(p => `${p.name}\n- ${p.description}`).join("\n\n");
           const skillsVal = (portfolio?.skills || resume?.skills || []).join(", ");
           const certsVal = (resCerts.length > 0 ? resCerts : (resume?.certificates || [])).join(", ");
@@ -4223,15 +4420,15 @@ WhatsApp: ${whatsappKandidat}`;
       activeExps.forEach((exp) => {
         if (exp.company && exp.role) {
           experienceListHtml += `
-            <div style="font-family: inherit; margin-bottom: 20px;">
-              <div style="font-weight: 850; font-size: 14px; font-family: inherit; margin: 0; display: flex; align-items: center; gap: 4px;">
+            <div style="font-family: inherit; margin-bottom: 20px; text-align: left;">
+              <div style="font-weight: bold; font-size: 14px; font-family: inherit; margin: 0; display: flex; align-items: center; gap: 4px; text-transform: uppercase;">
                 <span style="font-weight: 900; font-size: 16px; margin-right: 4px;">•</span> ${exp.company.toUpperCase()}
               </div>
-              <div style="font-size: 11.5px; font-weight: 600; margin-top: 3px; padding-left: 14px; opacity: 0.95;">
+              <div style="font-size: 12px; font-weight: 400; margin-top: 3px; padding-left: 0px; opacity: 0.95;">
                 ${exp.role} — ${exp.duration || ""}
               </div>
               <div style="height: 6px;"></div>
-              <p style="font-size: 11.5px; opacity: 0.85; line-height: 1.5; margin: 0; padding-left: 14px; white-space: pre-wrap; font-family: inherit;">
+              <p style="font-size: 11.5px; opacity: 0.85; line-height: 1.5; margin: 0; padding-left: 0px; white-space: pre-wrap; font-family: inherit; text-align: left;">
                 ${exp.jobdesk || ""}
               </p>
             </div>
@@ -4241,27 +4438,27 @@ WhatsApp: ${whatsappKandidat}`;
     } else {
       // elegant fallback matching the requested style
       experienceListHtml = `
-        <div style="font-family: inherit; margin-bottom: 20px;">
-          <div style="font-weight: 850; font-size: 14px; font-family: inherit; margin: 0; display: flex; align-items: center; gap: 4px;">
+        <div style="font-family: inherit; margin-bottom: 20px; text-align: left;">
+          <div style="font-weight: bold; font-size: 14px; font-family: inherit; margin: 0; display: flex; align-items: center; gap: 4px; text-transform: uppercase;">
             <span style="font-weight: 900; font-size: 16px; margin-right: 4px;">•</span> SOLUSINDO RAYA
           </div>
-          <div style="font-size: 11.5px; font-weight: 600; margin-top: 3px; padding-left: 14px; opacity: 0.95;">
+          <div style="font-size: 12px; font-weight: 400; margin-top: 3px; padding-left: 0px; opacity: 0.95;">
             Junior Frontend Web Developer — 2021 - 2023
           </div>
           <div style="height: 6px;"></div>
-          <p style="font-size: 11.5px; opacity: 0.85; line-height: 1.5; margin: 0; padding-left: 14px; white-space: pre-wrap; font-family: inherit;">
+          <p style="font-size: 11.5px; opacity: 0.85; line-height: 1.5; margin: 0; padding-left: 0px; white-space: pre-wrap; font-family: inherit; text-align: left;">
             Mengatur visual interface website dengan optimasi performa 30%.
           </p>
         </div>
-        <div style="font-family: inherit; margin-bottom: 20px;">
-          <div style="font-weight: 850; font-size: 14px; font-family: inherit; margin: 0; display: flex; align-items: center; gap: 4px;">
+        <div style="font-family: inherit; margin-bottom: 20px; text-align: left;">
+          <div style="font-weight: bold; font-size: 14px; font-family: inherit; margin: 0; display: flex; align-items: center; gap: 4px; text-transform: uppercase;">
             <span style="font-weight: 900; font-size: 16px; margin-right: 4px;">•</span> CREATIVE AGENCY
           </div>
-          <div style="font-size: 11.5px; font-weight: 600; margin-top: 3px; padding-left: 14px; opacity: 0.95;">
+          <div style="font-size: 12px; font-weight: 400; margin-top: 3px; padding-left: 0px; opacity: 0.95;">
             UI Designer Internship — 2020
           </div>
           <div style="height: 6px;"></div>
-          <p style="font-size: 11.5px; opacity: 0.85; line-height: 1.5; margin: 0; padding-left: 14px; white-space: pre-wrap; font-family: inherit;">
+          <p style="font-size: 11.5px; opacity: 0.85; line-height: 1.5; margin: 0; padding-left: 0px; white-space: pre-wrap; font-family: inherit; text-align: left;">
             Membantu mendesain draf kawat draf (wireframe) halaman landing page.
           </p>
         </div>
@@ -7746,7 +7943,7 @@ WhatsApp: ${whatsappKandidat}`;
                             />
 
                             {/* Elements Loop sorted by text-wrapping weight constraints */}
-                            {getSortedCanvasElements().map((el) => {
+                            {getResolvedCanvasElements(getSortedCanvasElements(), getTextMapping()).map((el) => {
                                 const isSelected = selectedElementId === el.id;
 
                                 // Dynamically render items based on shape type
@@ -7763,12 +7960,7 @@ WhatsApp: ${whatsappKandidat}`;
                                       stroke={el.stroke || "transparent"}
                                       strokeWidth={el.strokeWidth || 0}
                                       draggable={!el.isLocked}
-                                      onDragEnd={(e) => {
-                                        const updated = canvasElements.map(item => 
-                                          item.id === el.id ? { ...item, x: e.target.x(), y: e.target.y() } : item
-                                        );
-                                        updateElementsAndHistory(updated);
-                                      }}
+                                      onDragEnd={(e) => handleUserElementDragEnd(el.id, e.target.x(), e.target.y())}
                                       onTransformEnd={(e) => {
                                         const node = e.target;
                                         const scaleX = node.scaleX();
@@ -7777,16 +7969,7 @@ WhatsApp: ${whatsappKandidat}`;
                                         node.scaleY(1);
                                         const nextWidth = Math.round(node.width() * scaleX);
                                         const nextHeight = Math.round(node.height() * scaleY);
-                                        const updated = canvasElements.map(item => 
-                                          item.id === el.id ? { 
-                                            ...item, 
-                                            x: node.x(), 
-                                            y: node.y(), 
-                                            width: nextWidth, 
-                                            height: nextHeight 
-                                          } : item
-                                        );
-                                        updateElementsAndHistory(updated);
+                                        handleUserElementTransformEnd(el.id, node.x(), node.y(), { width: nextWidth, height: nextHeight });
                                         setElementWidth(nextWidth);
                                         setElementHeight(nextHeight);
                                       }}
@@ -7813,27 +7996,14 @@ WhatsApp: ${whatsappKandidat}`;
                                       stroke="transparent"
                                       strokeWidth={0}
                                       draggable={!el.isLocked}
-                                      onDragEnd={(e) => {
-                                        const updated = canvasElements.map(item => 
-                                          item.id === el.id ? { ...item, x: e.target.x(), y: e.target.y() } : item
-                                        );
-                                        updateElementsAndHistory(updated);
-                                      }}
+                                      onDragEnd={(e) => handleUserElementDragEnd(el.id, e.target.x(), e.target.y())}
                                       onTransformEnd={(e) => {
                                         const node = e.target;
                                         const scaleX = node.scaleX();
                                         node.scaleX(1);
                                         node.scaleY(1);
                                         const nextRadius = Math.round(((node as any).radius() || 40) * scaleX);
-                                        const updated = canvasElements.map(item => 
-                                          item.id === el.id ? { 
-                                            ...item, 
-                                            x: node.x(), 
-                                            y: node.y(), 
-                                            radius: nextRadius 
-                                          } : item
-                                        );
-                                        updateElementsAndHistory(updated);
+                                        handleUserElementTransformEnd(el.id, node.x(), node.y(), { radius: nextRadius });
                                         setElementWidth(nextRadius * 2);
                                       }}
                                       onClick={() => {
@@ -7864,12 +8034,7 @@ WhatsApp: ${whatsappKandidat}`;
                                       shape={el.shape || "circle"}
                                       borderFill={el.borderFill || el.stroke || "transparent"}
                                       strokeWidth={el.strokeWidth || 0}
-                                      onDragEnd={(e: any) => {
-                                        const updated = canvasElements.map(item => 
-                                          item.id === el.id ? { ...item, x: e.target.x(), y: e.target.y() } : item
-                                        );
-                                        updateElementsAndHistory(updated);
-                                      }}
+                                      onDragEnd={(e: any) => handleUserElementDragEnd(el.id, e.target.x(), e.target.y())}
                                       onTransformEnd={(e: any) => {
                                         const node = e.target;
                                         const scaleX = node.scaleX();
@@ -7878,10 +8043,7 @@ WhatsApp: ${whatsappKandidat}`;
                                         node.scaleY(1);
                                         const nextWidth = Math.round(node.width() * scaleX);
                                         const nextHeight = Math.round(node.height() * scaleY);
-                                        const updated = canvasElements.map(item => 
-                                          item.id === el.id ? { ...item, x: node.x(), y: node.y(), width: nextWidth, height: nextHeight } : item
-                                        );
-                                        updateElementsAndHistory(updated);
+                                        handleUserElementTransformEnd(el.id, node.x(), node.y(), { width: nextWidth, height: nextHeight });
                                         setElementWidth(nextWidth);
                                         setElementHeight(nextHeight);
                                       }}
@@ -7918,13 +8080,8 @@ WhatsApp: ${whatsappKandidat}`;
                                       lineHeight={el.lineHeight || 1.2}
                                       align={el.align || "left"}
                                       draggable={!el.isLocked}
-                                      onDragEnd={(e) => {
-                                        const updated = canvasElements.map(item => 
-                                          item.id === el.id ? { ...item, x: e.target.x(), y: e.target.y() } : item
-                                        );
-                                        updateElementsAndHistory(updated);
-                                      }}
-                                      onTransformEnd={(e) => {
+                                      onDragEnd={(e) => handleUserElementDragEnd(el.id, e.target.x(), e.target.y())}
+                                      onTransformEnd={(e: any) => {
                                         const node = e.target;
                                         const scaleX = node.scaleX();
                                         const scaleY = node.scaleY();
@@ -7932,16 +8089,7 @@ WhatsApp: ${whatsappKandidat}`;
                                         node.scaleY(1);
                                         const nextWidth = Math.round((node.width() || 300) * scaleX);
                                         const nextFontSize = Math.max(8, Math.round((el.fontSize || 12) * scaleY));
-                                        const updated = canvasElements.map(item => 
-                                          item.id === el.id ? { 
-                                            ...item, 
-                                            x: node.x(), 
-                                            y: node.y(), 
-                                            width: nextWidth,
-                                            fontSize: nextFontSize
-                                          } : item
-                                        );
-                                        updateElementsAndHistory(updated);
+                                        handleUserElementTransformEnd(el.id, node.x(), node.y(), { width: nextWidth, fontSize: nextFontSize });
                                         setElementWidth(nextWidth);
                                         setElementFontSize(nextFontSize);
                                       }}
@@ -8215,8 +8363,181 @@ WhatsApp: ${whatsappKandidat}`;
                             {/* Property text content descriptor */}
                             {activeEl.type === "text" && (
                               <div className="space-y-1.5 text-left">
-                                <label className="text-xxs font-black uppercase text-slate-400 block">Isi Teks / Tag Template</label>
+                                <div className="flex justify-between items-center">
+                                  <label className="text-xxs font-black uppercase text-slate-400 block">Isi Teks / Tag Template</label>
+                                  {!activeEl.isLocked && (
+                                    <span className="text-[10px] text-brand font-bold animate-pulse">✨ Fitur Blok/Sorot Aktif</span>
+                                  )}
+                                </div>
+
+                                {/* Selection Formatting & Splitting Toolbar */}
+                                {!activeEl.isLocked && (
+                                  <div className="bg-slate-50 p-2 border border-slate-200/80 rounded-xl space-y-2 mb-2 animate-fadeIn">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-[9px] font-extrabold text-slate-500 uppercase tracking-wide flex items-center gap-1">
+                                        💡 ALAT PENYUNTING TEKS (BLOK)
+                                      </span>
+                                      <span className="text-[8px] bg-sky-100 text-sky-800 px-1 py-0.5 rounded font-black uppercase">Instan</span>
+                                    </div>
+                                    <p className="text-[9.5px] text-slate-500 leading-tight">
+                                      Sorot (block) beberapa kata di kolom bawah (misal: "PENGALAMAN KERJA") untuk memformat atau memisahnya:
+                                    </p>
+                                    <div className="flex flex-wrap items-center gap-1.5">
+                                      <button
+                                        type="button"
+                                        title="Ubah teks yang diblok menjadi KAPITAL"
+                                        onClick={() => {
+                                          const textarea = userTextareaRef.current;
+                                          if (!textarea) return;
+                                          const start = textarea.selectionStart;
+                                          const end = textarea.selectionEnd;
+                                          const originalText = elementTextVal || "";
+                                          let newText = originalText;
+                                          if (start !== end) {
+                                            const before = originalText.substring(0, start);
+                                            const selected = originalText.substring(start, end);
+                                            const after = originalText.substring(end);
+                                            newText = before + selected.toUpperCase() + after;
+                                          } else {
+                                            newText = originalText.toUpperCase();
+                                          }
+                                          setElementTextVal(newText);
+                                          const updated = canvasElements.map(item => 
+                                            item.id === selectedElementId ? { ...item, text: newText } : item
+                                          );
+                                          setCanvasElements(updated);
+                                          updateElementsAndHistory(updated);
+                                          setTimeout(() => {
+                                            textarea.focus();
+                                            textarea.setSelectionRange(start, end);
+                                          }, 50);
+                                        }}
+                                        className="px-2 py-1 bg-white hover:bg-slate-100 text-slate-705 border border-slate-200 rounded-lg text-[9.5px] font-bold cursor-pointer transition flex items-center gap-0.5"
+                                      >
+                                        🔠 KAPITAL
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        title="Ubah teks yang diblok menjadi huruf kecil"
+                                        onClick={() => {
+                                          const textarea = userTextareaRef.current;
+                                          if (!textarea) return;
+                                          const start = textarea.selectionStart;
+                                          const end = textarea.selectionEnd;
+                                          const originalText = elementTextVal || "";
+                                          let newText = originalText;
+                                          if (start !== end) {
+                                            const before = originalText.substring(0, start);
+                                            const selected = originalText.substring(start, end);
+                                            const after = originalText.substring(end);
+                                            newText = before + selected.toLowerCase() + after;
+                                          } else {
+                                            newText = originalText.toLowerCase();
+                                          }
+                                          setElementTextVal(newText);
+                                          const updated = canvasElements.map(item => 
+                                            item.id === selectedElementId ? { ...item, text: newText } : item
+                                          );
+                                          setCanvasElements(updated);
+                                          updateElementsAndHistory(updated);
+                                          setTimeout(() => {
+                                            textarea.focus();
+                                            textarea.setSelectionRange(start, end);
+                                          }, 50);
+                                        }}
+                                        className="px-2 py-1 bg-white hover:bg-slate-100 text-slate-705 border border-slate-200 rounded-lg text-[9.5px] font-bold cursor-pointer transition flex items-center gap-0.5"
+                                      >
+                                        🔡 kecil
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        title="Jadikan Tebal (Bold)"
+                                        onClick={() => {
+                                          const nextStyle = elementFontStyle === "bold" ? "normal" : "bold";
+                                          setElementFontStyle(nextStyle);
+                                          const updated = canvasElements.map(item => 
+                                            item.id === selectedElementId ? { ...item, fontStyle: nextStyle } : item
+                                          );
+                                          setCanvasElements(updated);
+                                          updateElementsAndHistory(updated);
+                                        }}
+                                        className={`px-2 py-1 select-none font-bold rounded-lg text-[9.5px] cursor-pointer transition flex items-center gap-0.5 border ${
+                                          elementFontStyle === "bold" 
+                                            ? "bg-slate-800 text-white border-slate-900" 
+                                            : "bg-white hover:bg-slate-100 text-slate-705 border-slate-200"
+                                        }`}
+                                      >
+                                        <b>B</b> Tebal
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        title="Perbesar Ukuran Font (+2px)"
+                                        onClick={() => {
+                                          const nextSize = Math.min(elementFontSize + 2, 72);
+                                          setElementFontSize(nextSize);
+                                          const updated = canvasElements.map(item => 
+                                            item.id === selectedElementId ? { ...item, fontSize: nextSize } : item
+                                          );
+                                          setCanvasElements(updated);
+                                          updateElementsAndHistory(updated);
+                                        }}
+                                        className="px-2 py-1 bg-white hover:bg-slate-100 text-slate-705 border border-slate-200 rounded-lg text-[9.5px] font-bold cursor-pointer transition flex items-center gap-0.5"
+                                      >
+                                        ➕ A+
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        title="Perkecil Ukuran Font (-2px)"
+                                        onClick={() => {
+                                          const nextSize = Math.max(elementFontSize - 2, 8);
+                                          setElementFontSize(nextSize);
+                                          const updated = canvasElements.map(item => 
+                                            item.id === selectedElementId ? { ...item, fontSize: nextSize } : item
+                                          );
+                                          setCanvasElements(updated);
+                                          updateElementsAndHistory(updated);
+                                        }}
+                                        className="px-2 py-1 bg-white hover:bg-slate-100 text-slate-705 border border-slate-200 rounded-lg text-[9.5px] font-bold cursor-pointer transition flex items-center gap-0.5"
+                                      >
+                                        ➖ A-
+                                      </button>
+
+                                      <select
+                                        title="Ubah Jenis Font"
+                                        value={elementFontFamily}
+                                        onChange={(e) => {
+                                          const val = e.target.value;
+                                          if (!val) return;
+                                          loadGoogleFont(val);
+                                          setElementFontFamily(val);
+                                          const next = canvasElements.map(item => 
+                                            item.id === selectedElementId ? { ...item, fontFamily: val } : item
+                                          );
+                                          setCanvasElements(next);
+                                          updateElementsAndHistory(next);
+                                        }}
+                                        className="h-6 px-1.5 py-0 bg-white hover:bg-slate-100 text-slate-750 border border-slate-200 rounded-lg text-[9.5px] font-bold cursor-pointer transition focus:outline-none max-w-[120px]"
+                                      >
+                                        <option value="Inter">Inter</option>
+                                        <option value="Montserrat">Montserrat</option>
+                                        <option value="Roboto">Roboto</option>
+                                        <option value="Poppins">Poppins</option>
+                                        <option value="Playfair Display">Playfair Display</option>
+                                        <option value="Lora">Lora</option>
+                                        <option value="Space Grotesk">Space Grotesk</option>
+                                        <option value="JetBrains Mono">JetBrains Mono</option>
+                                        <option value="Bebas Neue">Bebas Neue</option>
+                                      </select>
+                                    </div>
+                                  </div>
+                                )}
+
                                 <textarea
+                                  ref={userTextareaRef}
                                   rows={4}
                                   value={elementTextVal || ""}
                                   disabled={activeEl.isLocked}
@@ -8511,6 +8832,125 @@ WhatsApp: ${whatsappKandidat}`;
                                   }}
                                   className="w-full accent-brand cursor-pointer"
                                 />
+                              </div>
+                            )}
+
+                            {/* Tata Letak Dinamis (Dynamic Flow) */}
+                            {activeEl.type === "text" && (
+                              <div className="border-t border-slate-100 pt-3 space-y-2">
+                                <label className="text-xxs font-black uppercase text-slate-400 block mb-1">Tata Letak Dinamis (Dynamic Flow)</label>
+                                
+                                <div className="grid grid-cols-2 gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const updated = canvasElements.map(item => 
+                                        item.id === activeEl.id ? { ...item, relativeTo: undefined, relativeGap: undefined } : item
+                                      );
+                                      updateElementsAndHistory(updated);
+                                    }}
+                                    className={`py-1.5 rounded-lg border text-[10px] font-bold transition cursor-pointer ${
+                                      !activeEl.relativeTo 
+                                        ? "bg-slate-900 border-slate-900 text-white" 
+                                        : "bg-white border-slate-200 text-slate-705 hover:bg-slate-50"
+                                    }`}
+                                  >
+                                    📌 Absolut (Tetap)
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      // Cari elemen teks terdekat secara vertikal di atas activeEl
+                                      const textElementsAbove = canvasElements.filter(item => 
+                                        item.id !== activeEl.id && 
+                                        item.type === "text" && 
+                                        item.y < activeEl.y
+                                      );
+                                      let bestParent = null;
+                                      if (textElementsAbove.length > 0) {
+                                        // Urutkan menurun berdasarkan koordinat y (biar dapet yang paling dekat dengan activeEl)
+                                        textElementsAbove.sort((a, b) => b.y - a.y);
+                                        bestParent = textElementsAbove[0];
+                                      } else {
+                                        // Fallback ke elemen teks lain apa pun
+                                        bestParent = canvasElements.find(item => item.id !== activeEl.id && item.type === "text" && item.id !== "bg");
+                                      }
+
+                                      // Jika tidak ada teks sama sekali, cari apa pun selain background
+                                      const parentEl = bestParent || canvasElements.find(item => item.id !== activeEl.id && item.id !== "bg" && item.id !== "background");
+                                      
+                                      if (parentEl) {
+                                        const parentHeight = getElementHeight(parentEl, getTextMapping());
+                                        const defaultGap = Math.max(10, Math.round(activeEl.y - (parentEl.y + parentHeight)));
+                                        const updated = canvasElements.map(item => 
+                                          item.id === activeEl.id ? { ...item, relativeTo: parentEl.id, relativeGap: defaultGap } : item
+                                        );
+                                        updateElementsAndHistory(updated);
+                                      } else {
+                                        alert("Gagal mengaktifkan: silakan tambahkan minimal 2 elemen terlebih dahulu.");
+                                      }
+                                    }}
+                                    className={`py-1.5 rounded-lg border text-[10px] font-bold transition cursor-pointer ${
+                                      activeEl.relativeTo 
+                                        ? "bg-slate-900 border-slate-900 text-white" 
+                                        : "bg-white border-slate-200 text-slate-705 hover:bg-slate-50"
+                                    }`}
+                                  >
+                                    🔗 Mengikuti Elemen
+                                  </button>
+                                </div>
+
+                                <p className="text-[10px] text-slate-500 leading-normal mt-1 bg-indigo-50/50 p-2 rounded-lg border border-indigo-100/50">
+                                  💡 <strong>Anti-Tabrakan / Menimpa:</strong> Gunakan fitur ini agar elemen ini otomatis bergeser ke bawah jika data di atasnya (contoh: <em>Pengalaman Kerja</em>) bertambah panjang.
+                                </p>
+
+                                {activeEl.relativeTo && (
+                                  <div className="space-y-2 bg-slate-50 p-2 rounded-xl border border-slate-200 text-[10px]">
+                                    <div>
+                                      <label className="text-slate-400 font-bold block mb-1">Gantung di Bawah Elemen:</label>
+                                      <select
+                                        value={activeEl.relativeTo || ""}
+                                        onChange={(e) => {
+                                          const pId = e.target.value;
+                                          const targetParent = canvasElements.find(item => item.id === pId);
+                                          const gap = targetParent ? Math.max(10, Math.round(activeEl.y - (targetParent.y + getElementHeight(targetParent, getTextMapping())))) : 15;
+                                          const updated = canvasElements.map(item => 
+                                            item.id === activeEl.id ? { ...item, relativeTo: pId, relativeGap: gap } : item
+                                          );
+                                          updateElementsAndHistory(updated);
+                                        }}
+                                        className="w-full text-xxs font-semibold p-1.5 bg-white border border-slate-200 rounded-lg focus:outline-none text-slate-705 cursor-pointer"
+                                      >
+                                        {canvasElements
+                                          .filter(item => item.id !== activeEl.id)
+                                          .map(item => {
+                                            const isText = item.type === "text";
+                                            const icon = isText ? "📝" : item.type === "image" ? "🖼️" : "📦";
+                                            const label = item.text ? (item.text.length > 35 ? item.text.substring(0, 35) + "..." : item.text) : `${item.type} (${item.id})`;
+                                            return <option key={item.id} value={item.id}>{icon} {label}</option>;
+                                          })}
+                                      </select>
+                                    </div>
+
+                                    <div>
+                                      <label className="text-slate-400 font-bold block mb-1">Jarak Spasi Vertikal ({activeEl.relativeGap !== undefined ? activeEl.relativeGap : 15}px):</label>
+                                      <input
+                                        type="range"
+                                        min="-100"
+                                        max="200"
+                                        value={activeEl.relativeGap !== undefined ? activeEl.relativeGap : 15}
+                                        onChange={(e) => {
+                                          const val = parseInt(e.target.value, 10);
+                                          const updated = canvasElements.map(item => 
+                                            item.id === activeEl.id ? { ...item, relativeGap: val } : item
+                                          );
+                                          updateElementsAndHistory(updated);
+                                        }}
+                                        className="w-full mt-1 accent-indigo-600 block h-1"
+                                      />
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             )}
 

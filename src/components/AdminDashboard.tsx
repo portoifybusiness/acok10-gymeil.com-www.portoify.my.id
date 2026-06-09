@@ -46,6 +46,150 @@ interface AdminDashboardProps {
   onLogout: () => void;
 }
 
+// --- HELPER UNTUK TATA LETAK DINAMIS ---
+function estimateTextHeight(text: string, fontSize: number, fontFamily: string, width: number, lineHeight: number) {
+  if (!text) return 0;
+  
+  let canvas: HTMLCanvasElement | null = null;
+  let context: CanvasRenderingContext2D | null = null;
+  try {
+    canvas = document.createElement('canvas');
+    context = canvas.getContext('2d');
+  } catch (e) {
+    // fallback
+  }
+  
+  if (context) {
+    context.font = `${fontSize}px "${fontFamily}"`;
+  }
+  
+  const paragraphs = text.split('\n');
+  if (!width) {
+    return paragraphs.length * fontSize * lineHeight;
+  }
+  
+  let totalLines = 0;
+  for (const para of paragraphs) {
+    if (para.trim() === "") {
+      totalLines += 1;
+      continue;
+    }
+    const words = para.split(/\s+/);
+    let currentLine = "";
+    let paraLines = 0;
+    
+    for (const word of words) {
+      if (!word) continue;
+      const testLine = currentLine ? currentLine + " " + word : word;
+      let isOver = false;
+      if (context) {
+        const metrics = context.measureText(testLine);
+        isOver = metrics.width > width;
+      } else {
+        isOver = (testLine.length * (fontSize * 0.55)) > width;
+      }
+      
+      if (isOver && currentLine !== "") {
+        paraLines++;
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
+    }
+    if (currentLine) {
+      paraLines++;
+    }
+    totalLines += Math.max(1, paraLines);
+  }
+  
+  return totalLines * fontSize * lineHeight;
+}
+
+function getElementHeight(el: any, textMapping: Record<string, string>): number {
+  if (el.type === "circle") {
+    return (el.radius || el.width / 2 || 40) * 2;
+  }
+  if (el.type === "rect") {
+    return el.height || 120;
+  }
+  if (el.type === "image") {
+    return el.height || 120;
+  }
+  if (el.type === "text") {
+    let textStr = el.text || "";
+    if (textMapping) {
+      Object.entries(textMapping).forEach(([key, value]) => {
+        textStr = textStr.split(key).join(value || "");
+      });
+    }
+    
+    const fontSize = el.fontSize || 12;
+    const fontFamily = el.fontFamily || "Inter";
+    const width = el.width;
+    const lineHeight = el.lineHeight || 1.2;
+    
+    return estimateTextHeight(textStr, fontSize, fontFamily, width, lineHeight);
+  }
+  return 0;
+}
+
+const resolveElementLayout = (
+  elId: string, 
+  elements: any[], 
+  resolved: Record<string, { y: number; height: number }>,
+  textMapping: Record<string, string>,
+  visited: Set<string> = new Set()
+): { y: number; height: number } => {
+  if (resolved[elId]) {
+    return resolved[elId];
+  }
+  
+  const el = elements.find(item => item.id === elId);
+  if (!el) {
+    return { y: 0, height: 0 };
+  }
+  
+  if (visited.has(elId)) {
+    return { y: el.y, height: getElementHeight(el, textMapping) };
+  }
+  visited.add(elId);
+  
+  let finalY = el.y;
+  let finalHeight = getElementHeight(el, textMapping);
+  
+  if (el.relativeTo) {
+    const parent = elements.find(item => item.id === el.relativeTo);
+    if (parent) {
+      const parentResolved = resolveElementLayout(parent.id, elements, resolved, textMapping, visited);
+      const gap = el.relativeGap !== undefined ? el.relativeGap : 15;
+      finalY = parentResolved.y + parentResolved.height + gap;
+    }
+  }
+  
+  resolved[elId] = { y: finalY, height: finalHeight };
+  return resolved[elId];
+};
+
+function getResolvedCanvasElements(elements: any[], textMapping: Record<string, string>) {
+  const resolved: Record<string, { y: number; height: number }> = {};
+  
+  elements.forEach(el => {
+    resolveElementLayout(el.id, elements, resolved, textMapping);
+  });
+  
+  return elements.map(el => {
+    const res = resolved[el.id];
+    if (res) {
+      return {
+        ...el,
+        y: res.y
+      };
+    }
+    return el;
+  });
+}
+// ----------------------------------------
+
 export default function AdminDashboard({ currentUser, onLogout }: AdminDashboardProps) {
   // Local secure fetch interceptor to automatically attach JWT authorization tokens on cPanel live server
   // and handle Method Tunneling (overriding PUT/DELETE with POST) for high compatibility on strict cPanel environments
@@ -148,6 +292,7 @@ export default function AdminDashboard({ currentUser, onLogout }: AdminDashboard
 
   const cvStageRef = useRef<any>(null);
   const cvTransformerRef = useRef<any>(null);
+  const adminTextareaRef = useRef<HTMLTextAreaElement>(null);
   const cvCanvasContainerRef = useRef<HTMLDivElement>(null);
 
   // Admin fetched state
@@ -500,6 +645,58 @@ export default function AdminDashboard({ currentUser, onLogout }: AdminDashboard
       if (weightA !== weightB) return weightA - weightB;
       return cvCanvasElements.indexOf(a) - cvCanvasElements.indexOf(b);
     });
+  };
+
+  const handleElementDragEnd = (elId: string, dragX: number, dragY: number) => {
+    const el = cvCanvasElements.find(item => item.id === elId);
+    if (!el) return;
+    
+    let nextY = dragY;
+    let nextGap = el.relativeGap;
+    
+    if (el.relativeTo) {
+      const parent = cvCanvasElements.find(item => item.id === el.relativeTo);
+      if (parent) {
+        const resolved = getResolvedCanvasElements(cvCanvasElements, {});
+        const parentResolved = resolved.find(item => item.id === parent.id);
+        const parentY = parentResolved ? parentResolved.y : parent.y;
+        const parentHeight = getElementHeight(parent, {});
+        nextGap = Math.round(dragY - (parentY + parentHeight));
+      }
+    }
+    
+    const updated = cvCanvasElements.map(item => 
+      item.id === elId 
+        ? { ...item, x: dragX, y: nextY, relativeGap: nextGap } 
+        : item
+    );
+    updateCvElementsAndHistory(updated);
+  };
+
+  const handleElementTransformEnd = (elId: string, dragX: number, dragY: number, sizeAttrs: any) => {
+    const el = cvCanvasElements.find(item => item.id === elId);
+    if (!el) return;
+    
+    let nextY = dragY;
+    let nextGap = el.relativeGap;
+    
+    if (el.relativeTo) {
+      const parent = cvCanvasElements.find(item => item.id === el.relativeTo);
+      if (parent) {
+        const resolved = getResolvedCanvasElements(cvCanvasElements, {});
+        const parentResolved = resolved.find(item => item.id === parent.id);
+        const parentY = parentResolved ? parentResolved.y : parent.y;
+        const parentHeight = getElementHeight(parent, {});
+        nextGap = Math.round(dragY - (parentY + parentHeight));
+      }
+    }
+    
+    const updated = cvCanvasElements.map(item => 
+      item.id === elId 
+        ? { ...item, x: dragX, y: nextY, relativeGap: nextGap, ...sizeAttrs } 
+        : item
+    );
+    updateCvElementsAndHistory(updated);
   };
 
   const initCvCanvasTemplate = (elements: any[], templateId: string | null = null, bgColor = "#ffffff") => {
@@ -3853,9 +4050,218 @@ export default function AdminDashboard({ currentUser, onLogout }: AdminDashboard
                             <div>
                               <div className="flex justify-between items-center mb-1">
                                 <label className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Isi Teks / Tag Variable</label>
-                                <span className="text-[9px] text-amber-500 font-black tracking-normal">e.g. {"{{NAMA_LENGKAP}}"}</span>
+                                <span className="text-[10px] text-brand font-bold animate-pulse">✨ Fitur Blok/Sorot Aktif</span>
                               </div>
+
+                              {/* Selection Formatting & Splitting Toolbar */}
+                              <div className="bg-slate-50 p-2 border border-slate-200/80 rounded-xl space-y-2 mb-2 animate-fadeIn">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[9px] font-extrabold text-slate-500 uppercase tracking-wide flex items-center gap-1">
+                                    💡 ALAT PENYUNTING TEKS (BLOK)
+                                  </span>
+                                  <span className="text-[8px] bg-sky-100 text-sky-800 px-1 py-0.5 rounded font-black uppercase">Instan</span>
+                                </div>
+                                <p className="text-[9.5px] text-slate-500 leading-tight">
+                                  Sorot (block) beberapa kata di kolom bawah (misal: "PENGALAMAN KERJA") untuk memformat atau memisahnya:
+                                </p>
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  <button
+                                    type="button"
+                                    title="Ubah teks yang diblok menjadi KAPITAL"
+                                    onClick={() => {
+                                      const textarea = adminTextareaRef.current;
+                                      if (!textarea) return;
+                                      const start = textarea.selectionStart;
+                                      const end = textarea.selectionEnd;
+                                      const originalText = cvElementTextVal || "";
+                                      let newText = originalText;
+                                      if (start !== end) {
+                                        const before = originalText.substring(0, start);
+                                        const selected = originalText.substring(start, end);
+                                        const after = originalText.substring(end);
+                                        newText = before + selected.toUpperCase() + after;
+                                      } else {
+                                        newText = originalText.toUpperCase();
+                                      }
+                                      setCvElementTextVal(newText);
+                                      const updated = cvCanvasElements.map(item => 
+                                        item.id === el.id ? { ...item, text: newText } : item
+                                      );
+                                      updateCvElementsAndHistory(updated);
+                                      setTimeout(() => {
+                                        textarea.focus();
+                                        textarea.setSelectionRange(start, end);
+                                      }, 50);
+                                    }}
+                                    className="px-2 py-1 bg-white hover:bg-slate-100 text-slate-705 border border-slate-200 rounded-lg text-[9px] font-black cursor-pointer transition flex items-center gap-0.5"
+                                  >
+                                    🔠 KAPITAL
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    title="Ubah teks yang diblok menjadi huruf kecil"
+                                    onClick={() => {
+                                      const textarea = adminTextareaRef.current;
+                                      if (!textarea) return;
+                                      const start = textarea.selectionStart;
+                                      const end = textarea.selectionEnd;
+                                      const originalText = cvElementTextVal || "";
+                                      let newText = originalText;
+                                      if (start !== end) {
+                                        const before = originalText.substring(0, start);
+                                        const selected = originalText.substring(start, end);
+                                        const after = originalText.substring(end);
+                                        newText = before + selected.toLowerCase() + after;
+                                      } else {
+                                        newText = originalText.toLowerCase();
+                                      }
+                                      setCvElementTextVal(newText);
+                                      const updated = cvCanvasElements.map(item => 
+                                        item.id === el.id ? { ...item, text: newText } : item
+                                      );
+                                      updateCvElementsAndHistory(updated);
+                                      setTimeout(() => {
+                                        textarea.focus();
+                                        textarea.setSelectionRange(start, end);
+                                      }, 50);
+                                    }}
+                                    className="px-2 py-1 bg-white hover:bg-slate-100 text-slate-705 border border-slate-200 rounded-lg text-[9px] font-black cursor-pointer transition flex items-center gap-0.5"
+                                  >
+                                    🔡 kecil
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    title="Jadikan Tebal (Bold)"
+                                    onClick={() => {
+                                      const nextStyle = cvElementFontStyle === "bold" ? "normal" : "bold";
+                                      setCvElementFontStyle(nextStyle);
+                                      const updated = cvCanvasElements.map(item => 
+                                        item.id === el.id ? { ...item, fontStyle: nextStyle } : item
+                                      );
+                                      updateCvElementsAndHistory(updated);
+                                    }}
+                                    className={`px-2 py-1 select-none font-bold rounded-lg text-[9px] cursor-pointer transition flex items-center gap-0.5 border ${
+                                      cvElementFontStyle === "bold" 
+                                        ? "bg-slate-800 text-white border-slate-900" 
+                                        : "bg-white hover:bg-slate-100 text-slate-705 border-slate-200"
+                                    }`}
+                                  >
+                                    <b>B</b> Tebal
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    title="Perbesar Ukuran Font (+2px)"
+                                    onClick={() => {
+                                      const nextSize = Math.min(cvElementFontSize + 2, 72);
+                                      setCvElementFontSize(nextSize);
+                                      const updated = cvCanvasElements.map(item => 
+                                        item.id === el.id ? { ...item, fontSize: nextSize } : item
+                                      );
+                                      updateCvElementsAndHistory(updated);
+                                    }}
+                                    className="px-2 py-1 bg-white hover:bg-slate-100 text-slate-705 border border-slate-200 rounded-lg text-[9px] font-black cursor-pointer transition flex items-center gap-0.5"
+                                  >
+                                    ➕ A+
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    title="Perkecil Ukuran Font (-2px)"
+                                    onClick={() => {
+                                      const nextSize = Math.max(cvElementFontSize - 2, 8);
+                                      setCvElementFontSize(nextSize);
+                                      const updated = cvCanvasElements.map(item => 
+                                        item.id === el.id ? { ...item, fontSize: nextSize } : item
+                                      );
+                                      updateCvElementsAndHistory(updated);
+                                    }}
+                                    className="px-2 py-1 bg-white hover:bg-slate-100 text-slate-705 border border-slate-200 rounded-lg text-[9px] font-black cursor-pointer transition flex items-center gap-0.5"
+                                  >
+                                    ➖ A-
+                                  </button>
+
+                                  <select
+                                    title="Ubah Jenis Font"
+                                    value=""
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      if (!val) return;
+                                      setCvElementFontFamily(val);
+                                      const next = cvCanvasElements.map(item => 
+                                        item.id === el.id ? { ...item, fontFamily: val } : item
+                                      );
+                                      updateCvElementsAndHistory(next);
+                                    }}
+                                    className="h-6 px-1.5 py-0 bg-white hover:bg-slate-100 text-slate-705 border border-slate-200 rounded-lg text-[9px] font-bold cursor-pointer transition focus:outline-none max-w-[100px]"
+                                  >
+                                    <option value="">⚙️ Font...</option>
+                                    <option value="Inter">Inter</option>
+                                    <option value="Space Grotesk">Space Grotesk</option>
+                                    <option value="Outfit">Outfit</option>
+                                    <option value="Playfair Display">Playfair Display</option>
+                                    <option value="JetBrains Mono">JetBrains Mono</option>
+                                    <option value="Fira Code">Fira Code</option>
+                                  </select>
+
+                                  <button
+                                    type="button"
+                                    title="Pecah teks yang diblok menjadi bagian terpisah di Canvas agar dapat Anda beri style & ukuran khusus secara terpisah"
+                                    onClick={() => {
+                                      const textarea = adminTextareaRef.current;
+                                      if (!textarea) return;
+                                      const start = textarea.selectionStart;
+                                      const end = textarea.selectionEnd;
+                                      if (start === end) {
+                                        alert("Silakan block kata atau baris di kolom bawah (contoh: 'PENGALAMAN KERJA'), lalu tekan tombol pecah ini!");
+                                        return;
+                                      }
+                                      const originalText = cvElementTextVal || "";
+                                      const selected = originalText.substring(start, end).trim();
+                                      if (!selected) return;
+
+                                      const before = originalText.substring(0, start);
+                                      const after = originalText.substring(end);
+                                      let updatedOriginal = (before + after).replace(/\n\n\n+/g, '\n\n').trim();
+                                      if (!updatedOriginal) {
+                                        updatedOriginal = "-";
+                                      }
+
+                                      const newTextId = `txt_${Date.now()}`;
+                                      const newTextEl = {
+                                        ...el,
+                                        id: newTextId,
+                                        text: selected,
+                                        x: el.x,
+                                        y: el.y + 25,
+                                        fontSize: el.fontSize ? Math.min(el.fontSize + 2, 24) : 14,
+                                        fontStyle: "bold",
+                                        isLocked: false
+                                      };
+
+                                      const updatedExisting = cvCanvasElements.map(item => 
+                                        item.id === el.id ? { ...item, text: updatedOriginal } : item
+                                      );
+                                      
+                                      const refreshed = [...updatedExisting, newTextEl];
+                                      updateCvElementsAndHistory(refreshed);
+                                      
+                                      setCvSelectedElementId(newTextId);
+                                      setCvElementTextVal(selected);
+                                      setCvElementFontSize(newTextEl.fontSize);
+                                      setCvElementFontStyle("bold");
+                                    }}
+                                    className="px-2 py-1.5 bg-brand text-white hover:bg-brand-dark rounded-lg text-[9px] font-black cursor-pointer transition flex items-center gap-0.5 shadow-sm ml-auto"
+                                  >
+                                    ✂️ PECAH JADI ELEMEN BARU
+                                  </button>
+                                </div>
+                              </div>
+
                               <textarea
+                                ref={adminTextareaRef}
                                 value={cvElementTextVal}
                                 onChange={(e) => {
                                   setCvElementTextVal(e.target.value);
@@ -4023,6 +4429,122 @@ export default function AdminDashboard({ currentUser, onLogout }: AdminDashboard
                                 <option value="center">Tengah</option>
                                 <option value="right">Rata Kanan</option>
                               </select>
+                            </div>
+
+                            <div className="border-t border-slate-100 pt-3 space-y-2">
+                              <label className="text-slate-500 font-bold uppercase tracking-wider block text-[10px]">Tata Letak Dinamis (Dynamic Flow)</label>
+                              
+                              <div className="grid grid-cols-2 gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = cvCanvasElements.map(item => 
+                                      item.id === el.id ? { ...item, relativeTo: undefined, relativeGap: undefined } : item
+                                    );
+                                    updateCvElementsAndHistory(updated);
+                                  }}
+                                  className={`py-1.5 rounded-lg border text-[10px] font-bold transition cursor-pointer ${
+                                    !el.relativeTo 
+                                      ? "bg-slate-900 border-slate-900 text-white" 
+                                      : "bg-white border-slate-200 text-slate-705 hover:bg-slate-50"
+                                  }`}
+                                >
+                                  📌 Absolut (Tetap)
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    // Cari elemen teks terdekat secara vertikal di atas el
+                                    const textElementsAbove = cvCanvasElements.filter(item => 
+                                      item.id !== el.id && 
+                                      item.type === "text" && 
+                                      item.y < el.y
+                                    );
+                                    let bestParent = null;
+                                    if (textElementsAbove.length > 0) {
+                                      // Urutkan menurun berdasarkan koordinat y (biar dapet yang paling dekat dengan el)
+                                      textElementsAbove.sort((a, b) => b.y - a.y);
+                                      bestParent = textElementsAbove[0];
+                                    } else {
+                                      // Fallback ke elemen teks lain apa pun
+                                      bestParent = cvCanvasElements.find(item => item.id !== el.id && item.type === "text" && item.id !== "bg");
+                                    }
+
+                                    // Jika tidak ada teks sama sekali, cari apa pun selain background
+                                    const parentEl = bestParent || cvCanvasElements.find(item => item.id !== el.id && item.id !== "bg" && item.id !== "background");
+                                    
+                                    if (parentEl) {
+                                      const parentHeight = getElementHeight(parentEl, {});
+                                      const defaultGap = Math.max(10, Math.round(el.y - (parentEl.y + parentHeight)));
+                                      const updated = cvCanvasElements.map(item => 
+                                        item.id === el.id ? { ...item, relativeTo: parentEl.id, relativeGap: defaultGap } : item
+                                      );
+                                      updateCvElementsAndHistory(updated);
+                                    } else {
+                                      alert("Gagal mengaktifkan: silakan tambahkan minimal 2 elemen terlebih dahulu.");
+                                    }
+                                  }}
+                                  className={`py-1.5 rounded-lg border text-[10px] font-bold transition cursor-pointer ${
+                                    el.relativeTo 
+                                      ? "bg-slate-900 border-slate-900 text-white" 
+                                      : "bg-white border-slate-200 text-slate-705 hover:bg-slate-50"
+                                  }`}
+                                >
+                                  🔗 Mengikuti Elemen
+                                </button>
+                              </div>
+
+                              <p className="text-[10px] text-slate-500 leading-normal mt-1 bg-indigo-50/50 p-2 rounded-lg border border-indigo-100/50">
+                                💡 <strong>Anti-Tabrakan / Menimpa:</strong> Gunakan fitur ini agar elemen ini otomatis bergeser ke bawah jika data di atasnya (contoh: <em>Pengalaman Kerja</em>) bertambah panjang.
+                              </p>
+
+                              {el.relativeTo && (
+                                <div className="space-y-2 bg-slate-50 p-2 rounded-xl border border-slate-200 text-[10px]">
+                                  <div>
+                                    <label className="text-slate-400 font-bold block mb-1">Gantung di Bawah Elemen:</label>
+                                    <select
+                                      value={el.relativeTo || ""}
+                                      onChange={(e) => {
+                                        const pId = e.target.value;
+                                        const targetParent = cvCanvasElements.find(item => item.id === pId);
+                                        const gap = targetParent ? Math.max(10, Math.round(el.y - (targetParent.y + getElementHeight(targetParent, {})))) : 15;
+                                        const updated = cvCanvasElements.map(item => 
+                                          item.id === el.id ? { ...item, relativeTo: pId, relativeGap: gap } : item
+                                        );
+                                        updateCvElementsAndHistory(updated);
+                                      }}
+                                      className="w-full text-xxs font-semibold p-1.5 bg-white border border-slate-200 rounded-lg focus:outline-none cursor-pointer"
+                                    >
+                                      {cvCanvasElements
+                                        .filter(item => item.id !== el.id)
+                                        .map(item => {
+                                          const isText = item.type === "text";
+                                          const icon = isText ? "📝" : item.type === "image" ? "🖼️" : "📦";
+                                          const label = item.text ? (item.text.length > 35 ? item.text.substring(0, 35) + "..." : item.text) : `${item.type} (${item.id})`;
+                                          return <option key={item.id} value={item.id}>{icon} {label}</option>;
+                                        })}
+                                    </select>
+                                  </div>
+
+                                  <div>
+                                    <label className="text-slate-400 font-bold block mb-1">Jarak Spasi Vertikal ({el.relativeGap !== undefined ? el.relativeGap : 15}px):</label>
+                                    <input
+                                      type="range"
+                                      min="-100"
+                                      max="200"
+                                      value={el.relativeGap !== undefined ? el.relativeGap : 15}
+                                      onChange={(e) => {
+                                        const val = parseInt(e.target.value, 10);
+                                        const updated = cvCanvasElements.map(item => 
+                                          item.id === el.id ? { ...item, relativeGap: val } : item
+                                        );
+                                        updateCvElementsAndHistory(updated);
+                                      }}
+                                      className="w-full mt-1 accent-indigo-600 block h-1"
+                                    />
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </div>
                         )}
@@ -4511,7 +5033,7 @@ export default function AdminDashboard({ currentUser, onLogout }: AdminDashboard
                         />
 
                         {/* Rendering core customized CV elements */}
-                        {getCvSortedCanvasElements().map((el) => {
+                        {getResolvedCanvasElements(getCvSortedCanvasElements(), {}).map((el) => {
                           if (el.type === "rect") {
                             return (
                               <Rect
@@ -4523,12 +5045,7 @@ export default function AdminDashboard({ currentUser, onLogout }: AdminDashboard
                                 height={el.height || 120}
                                 fill={el.fill || "#3b82f6"}
                                 draggable={true}
-                                onDragEnd={(e: any) => {
-                                  const updated = cvCanvasElements.map(item => 
-                                    item.id === el.id ? { ...item, x: e.target.x(), y: e.target.y() } : item
-                                  );
-                                  updateCvElementsAndHistory(updated);
-                                }}
+                                onDragEnd={(e: any) => handleElementDragEnd(el.id, e.target.x(), e.target.y())}
                                 onTransformEnd={(e: any) => {
                                   const node = e.target;
                                   const scaleX = node.scaleX();
@@ -4537,10 +5054,7 @@ export default function AdminDashboard({ currentUser, onLogout }: AdminDashboard
                                   node.scaleY(1);
                                   const nextWidth = Math.round(node.width() * scaleX);
                                   const nextHeight = Math.round(node.height() * scaleY);
-                                  const updated = cvCanvasElements.map(item => 
-                                    item.id === el.id ? { ...item, x: node.x(), y: node.y(), width: nextWidth, height: nextHeight } : item
-                                  );
-                                  updateCvElementsAndHistory(updated);
+                                  handleElementTransformEnd(el.id, node.x(), node.y(), { width: nextWidth, height: nextHeight });
                                   setCvElementWidth(nextWidth);
                                   setCvElementHeight(nextHeight);
                                 }}
@@ -4565,22 +5079,14 @@ export default function AdminDashboard({ currentUser, onLogout }: AdminDashboard
                                 radius={el.radius || 50}
                                 fill={el.fill || "#e2e8f0"}
                                 draggable={true}
-                                onDragEnd={(e: any) => {
-                                  const updated = cvCanvasElements.map(item => 
-                                    item.id === el.id ? { ...item, x: e.target.x(), y: e.target.y() } : item
-                                  );
-                                  updateCvElementsAndHistory(updated);
-                                }}
+                                onDragEnd={(e: any) => handleElementDragEnd(el.id, e.target.x(), e.target.y())}
                                 onTransformEnd={(e: any) => {
                                   const node = e.target;
                                   const scaleX = node.scaleX();
                                   node.scaleX(1);
                                   node.scaleY(1);
                                   const nextRadius = Math.round(node.radius() * scaleX);
-                                  const updated = cvCanvasElements.map(item => 
-                                    item.id === el.id ? { ...item, x: node.x(), y: node.y(), radius: nextRadius } : item
-                                  );
-                                  updateCvElementsAndHistory(updated);
+                                  handleElementTransformEnd(el.id, node.x(), node.y(), { radius: nextRadius });
                                 }}
                                 onClick={() => {
                                   setCvSelectedElementId(el.id);
@@ -4605,12 +5111,7 @@ export default function AdminDashboard({ currentUser, onLogout }: AdminDashboard
                                 shape={el.shape || "circle"}
                                 borderFill={el.borderFill || "transparent"}
                                 strokeWidth={el.strokeWidth || 0}
-                                onDragEnd={(e: any) => {
-                                  const updated = cvCanvasElements.map(item => 
-                                    item.id === el.id ? { ...item, x: e.target.x(), y: e.target.y() } : item
-                                  );
-                                  updateCvElementsAndHistory(updated);
-                                }}
+                                onDragEnd={(e: any) => handleElementDragEnd(el.id, e.target.x(), e.target.y())}
                                 onTransformEnd={(e: any) => {
                                   const node = e.target;
                                   const scaleX = node.scaleX();
@@ -4619,10 +5120,7 @@ export default function AdminDashboard({ currentUser, onLogout }: AdminDashboard
                                   node.scaleY(1);
                                   const nextWidth = Math.round(node.width() * scaleX);
                                   const nextHeight = Math.round(node.height() * scaleY);
-                                  const updated = cvCanvasElements.map(item => 
-                                    item.id === el.id ? { ...item, x: node.x(), y: node.y(), width: nextWidth, height: nextHeight } : item
-                                  );
-                                  updateCvElementsAndHistory(updated);
+                                  handleElementTransformEnd(el.id, node.x(), node.y(), { width: nextWidth, height: nextHeight });
                                   setCvElementWidth(nextWidth);
                                   setCvElementHeight(nextHeight);
                                 }}
@@ -4653,12 +5151,7 @@ export default function AdminDashboard({ currentUser, onLogout }: AdminDashboard
                                 align={el.align || "left"}
                                 wrap={el.wrap || "word"}
                                 draggable={true}
-                                onDragEnd={(e) => {
-                                  const updated = cvCanvasElements.map(item => 
-                                    item.id === el.id ? { ...item, x: e.target.x(), y: e.target.y() } : item
-                                  );
-                                  updateCvElementsAndHistory(updated);
-                                }}
+                                onDragEnd={(e: any) => handleElementDragEnd(el.id, e.target.x(), e.target.y())}
                                 onTransformEnd={(e: any) => {
                                   const node = e.target;
                                   const scaleX = node.scaleX();
@@ -4666,10 +5159,7 @@ export default function AdminDashboard({ currentUser, onLogout }: AdminDashboard
                                   node.scaleX(1);
                                   node.scaleY(1);
                                   const nextWidth = Math.round((node.width() || 150) * scaleX);
-                                  const updated = cvCanvasElements.map(item => 
-                                    item.id === el.id ? { ...item, x: node.x(), y: node.y(), width: nextWidth } : item
-                                  );
-                                  updateCvElementsAndHistory(updated);
+                                  handleElementTransformEnd(el.id, node.x(), node.y(), { width: nextWidth });
                                   setCvElementWidth(nextWidth);
                                 }}
                                 onClick={() => {
@@ -5834,27 +6324,27 @@ export default function AdminDashboard({ currentUser, onLogout }: AdminDashboard
             
             // Render beautiful structured lists inside admin preview
             const expSampleHtml = `
-              <div style="font-family: inherit; margin-bottom: 20px;">
-                <div style="font-weight: 850; font-size: 14px; font-family: inherit; margin: 0; display: flex; align-items: center; gap: 4px; color: inherit;">
+              <div style="font-family: inherit; margin-bottom: 20px; text-align: left;">
+                <div style="font-weight: bold; font-size: 14px; font-family: inherit; margin: 0; display: flex; align-items: center; gap: 4px; text-transform: uppercase; color: inherit;">
                   <span style="font-weight: 900; font-size: 16px; margin-right: 4px;">•</span> GOOGLE INDONESIA
                 </div>
-                <div style="font-size: 11.5px; font-weight: 600; margin-top: 3px; padding-left: 14px; opacity: 0.95; color: inherit;">
+                <div style="font-size: 12px; font-weight: 400; margin-top: 3px; padding-left: 0px; opacity: 0.95; color: inherit;">
                   Senior Full-Stack Developer — 2022 - Sekarang
                 </div>
                 <div style="height: 6px;"></div>
-                <p style="font-size: 11.5px; opacity: 0.85; line-height: 1.5; margin: 0; padding-left: 14px; white-space: pre-wrap; font-family: inherit; color: inherit;">
+                <p style="font-size: 11.5px; opacity: 0.85; line-height: 1.5; margin: 0; padding-left: 0px; white-space: pre-wrap; font-family: inherit; color: inherit; text-align: left;">
                   Memimpin perancangan dan implementasi fitur skalabilitas web global.
                 </p>
               </div>
-              <div style="font-family: inherit; margin-bottom: 20px;">
-                <div style="font-weight: 850; font-size: 14px; font-family: inherit; margin: 0; display: flex; align-items: center; gap: 4px; color: inherit;">
+              <div style="font-family: inherit; margin-bottom: 20px; text-align: left;">
+                <div style="font-weight: bold; font-size: 14px; font-family: inherit; margin: 0; display: flex; align-items: center; gap: 4px; text-transform: uppercase; color: inherit;">
                   <span style="font-weight: 900; font-size: 16px; margin-right: 4px;">•</span> TOKOPEDIA
                 </div>
-                <div style="font-size: 11.5px; font-weight: 600; margin-top: 3px; padding-left: 14px; opacity: 0.95; color: inherit;">
+                <div style="font-size: 12px; font-weight: 400; margin-top: 3px; padding-left: 0px; opacity: 0.95; color: inherit;">
                   Software Engineer Intern — 2021
                 </div>
                 <div style="height: 6px;"></div>
-                <p style="font-size: 11.5px; opacity: 0.85; line-height: 1.5; margin: 0; padding-left: 14px; white-space: pre-wrap; font-family: inherit; color: inherit;">
+                <p style="font-size: 11.5px; opacity: 0.85; line-height: 1.5; margin: 0; padding-left: 0px; white-space: pre-wrap; font-family: inherit; color: inherit; text-align: left;">
                   Berkolaborasi dalam pengembangan sistem manajemen inventori berkecepatan tinggi.
                 </p>
               </div>
