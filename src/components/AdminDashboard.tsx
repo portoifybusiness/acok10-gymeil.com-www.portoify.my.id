@@ -5831,6 +5831,46 @@ export default function AdminDashboard({ currentUser, onLogout }: AdminDashboard
             html = html.replace(/\{\{\s*ALAMAT\s*\}\}/gi, "Jl. Diponegoro No 12, Bandung, Jawa Barat");
             html = html.replace(/\{\{\s*TELEPON\s*\}\}/gi, "081234567890");
             html = html.replace(/\{\{\s*EMAIL\s*\}\}/gi, "john.doe@portoify-demo.com");
+            
+            // Render beautiful structured lists inside admin preview
+            const expSampleHtml = `
+              <div style="font-family: inherit; margin-bottom: 20px;">
+                <div style="font-weight: 850; font-size: 14px; font-family: inherit; margin: 0; display: flex; align-items: center; gap: 4px; color: inherit;">
+                  <span style="font-weight: 900; font-size: 16px; margin-right: 4px;">•</span> GOOGLE INDONESIA
+                </div>
+                <div style="font-size: 11.5px; font-weight: 600; margin-top: 3px; padding-left: 14px; opacity: 0.95; color: inherit;">
+                  Senior Full-Stack Developer — 2022 - Sekarang
+                </div>
+                <div style="height: 6px;"></div>
+                <p style="font-size: 11.5px; opacity: 0.85; line-height: 1.5; margin: 0; padding-left: 14px; white-space: pre-wrap; font-family: inherit; color: inherit;">
+                  Memimpin perancangan dan implementasi fitur skalabilitas web global.
+                </p>
+              </div>
+              <div style="font-family: inherit; margin-bottom: 20px;">
+                <div style="font-weight: 850; font-size: 14px; font-family: inherit; margin: 0; display: flex; align-items: center; gap: 4px; color: inherit;">
+                  <span style="font-weight: 900; font-size: 16px; margin-right: 4px;">•</span> TOKOPEDIA
+                </div>
+                <div style="font-size: 11.5px; font-weight: 600; margin-top: 3px; padding-left: 14px; opacity: 0.95; color: inherit;">
+                  Software Engineer Intern — 2021
+                </div>
+                <div style="height: 6px;"></div>
+                <p style="font-size: 11.5px; opacity: 0.85; line-height: 1.5; margin: 0; padding-left: 14px; white-space: pre-wrap; font-family: inherit; color: inherit;">
+                  Berkolaborasi dalam pengembangan sistem manajemen inventori berkecepatan tinggi.
+                </p>
+              </div>
+            `;
+            html = html.replace(/\{\{\s*PENGALAMAN_KERJA\s*\}\}/gi, expSampleHtml);
+
+            const eduSampleHtml = `
+              <div style="font-family: inherit; margin-bottom: 12px; color: inherit;">
+                <div style="font-weight: 700; font-size: 13px;">• S2 Ilmu Komputer - Universitas Indonesia (2020 - 2022)</div>
+                <div style="font-weight: 700; font-size: 13px;">• S1 Teknik Informatika - Institut Teknologi Bandung (2016 - 2020)</div>
+              </div>
+            `;
+            html = html.replace(/\{\{\s*PENDIDIKAN\s*\}\}/gi, eduSampleHtml);
+            html = html.replace(/\{\{\s*KEAHLIAN\s*\}\}/gi, "React, TypeScript, Tailwind CSS, Node.js, Next.js, MySQL, Cloud Native Architecture");
+            html = html.replace(/\{\{\s*SKILL\s*\}\}/gi, "React, TypeScript, Tailwind, Node.js, Next.js, MySQL");
+            html = html.replace(/\{\{\s*SKILLS\s*\}\}/gi, "React, TypeScript, Tailwind, Node.js");
             return html;
           })();
 

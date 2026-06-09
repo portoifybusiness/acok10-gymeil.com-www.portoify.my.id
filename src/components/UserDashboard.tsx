@@ -720,11 +720,15 @@ export default function UserDashboard({ currentUser, onLogout }: UserDashboardPr
     let expStr = "";
     const experiences = portfolio?.experiences || resume?.experiences || [];
     if (experiences.length > 0) {
-      expStr = experiences.map((exp: any) => 
-        `${exp.role || "Staf"} di ${exp.company || "Perusahaan"} (${exp.duration || "2020 - 2022"})\nDeskripsi: ${exp.jobdesk || "-"}`
-      ).join("\n\n");
+      expStr = experiences.map((exp: any) => {
+        const comp = exp.company ? exp.company.toUpperCase() : "PERUSAHAAN";
+        const role = exp.role || "Jabatan";
+        const dur = exp.duration || "Periode Kerja";
+        const desk = exp.jobdesk || "-";
+        return `• ${comp}\n  ${role} — ${dur}\n\n  ${desk}`;
+      }).join("\n\n");
     } else {
-      expStr = "1. Junior Frontend Web Developer di Solusindo Raya (2021 - 2023)\n   Mengatur visual interface website dengan optimasi performa 30%.\n\n2. UI Designer Internship di Creative Agency (2020)\n   Membantu mendesain draf kawat draf (wireframe) halaman landing page.";
+      expStr = "• SOLUSINDO RAYA\n  Junior Frontend Web Developer — 2021 - 2023\n\n  Mengatur visual interface website dengan optimasi performa 30%.\n\n• CREATIVE AGENCY\n  UI Designer Internship — 2020\n\n  Membantu mendesain draf kawat draf (wireframe) halaman landing page.";
     }
     textMapping["{{PENGALAMAN_KERJA}}"] = expStr;
 
@@ -3859,7 +3863,10 @@ WhatsApp: ${whatsappKandidat}`;
           const gender = profile?.gender || "Laki-laki";
 
           const educationsVal = (resEdus.filter(e => e.institution).length > 0 ? resEdus.filter(e => e.institution) : (resume?.educations || [])).map(e => `${e.institution} (${e.period || ""})\n- ${e.degree}`).join("\n\n");
-          const expsVal = (resExps.filter(e => e.company).length > 0 ? resExps.filter(e => e.company) : (resume?.experiences || [])).map(e => `${e.company} (${e.duration || ""})\n- ${e.role}: ${e.jobdesk || ""}`).join("\n\n");
+          const activeExperiences = resExps.filter(e => e.company).length > 0 ? resExps.filter(e => e.company) : (resume?.experiences || []);
+          const expsVal = activeExperiences.length > 0 
+            ? activeExperiences.map(e => `• ${e.company ? e.company.toUpperCase() : "PERUSAHAAN"}\n  ${e.role || "Jabatan"} — ${e.duration || ""}\n\n  ${e.jobdesk || ""}`).join("\n\n")
+            : "• SOLUSINDO RAYA\n  Junior Frontend Web Developer — 2021 - 2023\n\n  Mengatur visual interface website dengan optimasi performa 30%.\n\n• CREATIVE AGENCY\n  UI Designer Internship — 2020\n\n  Membantu mendesain draf kawat draf (wireframe) halaman landing page.";
           const projVal = (resProjects.filter(p => p.name).length > 0 ? resProjects.filter(p => p.name) : (resume?.projects || portfolio?.projects || [])).map(p => `${p.name}\n- ${p.description}`).join("\n\n");
           const skillsVal = (portfolio?.skills || resume?.skills || []).join(", ");
           const certsVal = (resCerts.length > 0 ? resCerts : (resume?.certificates || [])).join(", ");
@@ -4216,14 +4223,49 @@ WhatsApp: ${whatsappKandidat}`;
       activeExps.forEach((exp) => {
         if (exp.company && exp.role) {
           experienceListHtml += `
-            <div class="pb-4 last:pb-0" style="font-family: inherit;">
-              <h4 class="font-bold text-[14px]" style="font-family: inherit;">${exp.role} - ${exp.company}</h4>
-              <span class="text-xs opacity-75 block mt-0.5" style="font-family: inherit;">${exp.duration || ""}</span>
-              <p class="opacity-80 text-xs mt-1 leading-relaxed" style="font-family: inherit;">${exp.jobdesk || ""}</p>
+            <div style="font-family: inherit; margin-bottom: 20px;">
+              <div style="font-weight: 850; font-size: 14px; font-family: inherit; margin: 0; display: flex; align-items: center; gap: 4px;">
+                <span style="font-weight: 900; font-size: 16px; margin-right: 4px;">•</span> ${exp.company.toUpperCase()}
+              </div>
+              <div style="font-size: 11.5px; font-weight: 600; margin-top: 3px; padding-left: 14px; opacity: 0.95;">
+                ${exp.role} — ${exp.duration || ""}
+              </div>
+              <div style="height: 6px;"></div>
+              <p style="font-size: 11.5px; opacity: 0.85; line-height: 1.5; margin: 0; padding-left: 14px; white-space: pre-wrap; font-family: inherit;">
+                ${exp.jobdesk || ""}
+              </p>
             </div>
           `;
         }
       });
+    } else {
+      // elegant fallback matching the requested style
+      experienceListHtml = `
+        <div style="font-family: inherit; margin-bottom: 20px;">
+          <div style="font-weight: 850; font-size: 14px; font-family: inherit; margin: 0; display: flex; align-items: center; gap: 4px;">
+            <span style="font-weight: 900; font-size: 16px; margin-right: 4px;">•</span> SOLUSINDO RAYA
+          </div>
+          <div style="font-size: 11.5px; font-weight: 600; margin-top: 3px; padding-left: 14px; opacity: 0.95;">
+            Junior Frontend Web Developer — 2021 - 2023
+          </div>
+          <div style="height: 6px;"></div>
+          <p style="font-size: 11.5px; opacity: 0.85; line-height: 1.5; margin: 0; padding-left: 14px; white-space: pre-wrap; font-family: inherit;">
+            Mengatur visual interface website dengan optimasi performa 30%.
+          </p>
+        </div>
+        <div style="font-family: inherit; margin-bottom: 20px;">
+          <div style="font-weight: 850; font-size: 14px; font-family: inherit; margin: 0; display: flex; align-items: center; gap: 4px;">
+            <span style="font-weight: 900; font-size: 16px; margin-right: 4px;">•</span> CREATIVE AGENCY
+          </div>
+          <div style="font-size: 11.5px; font-weight: 600; margin-top: 3px; padding-left: 14px; opacity: 0.95;">
+            UI Designer Internship — 2020
+          </div>
+          <div style="height: 6px;"></div>
+          <p style="font-size: 11.5px; opacity: 0.85; line-height: 1.5; margin: 0; padding-left: 14px; white-space: pre-wrap; font-family: inherit;">
+            Membantu mendesain draf kawat draf (wireframe) halaman landing page.
+          </p>
+        </div>
+      `;
     }
 
     // Projects List HTML compiler
