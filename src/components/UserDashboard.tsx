@@ -799,7 +799,17 @@ export default function UserDashboard({ currentUser, onLogout }: UserDashboardPr
   };
 
   const initCanvasTemplate = (elements: any[], template: any, bgColor = "#ffffff") => {
-    const cloned = JSON.parse(JSON.stringify(elements));
+    const userPhoto = profPhoto || profile?.photoUrl;
+    const cloned = JSON.parse(JSON.stringify(elements)).map((el: any) => {
+      if (el.type === "image" && userPhoto) {
+        return {
+          ...el,
+          id: "profile_photo", // Use standard dynamic profile photo id
+          url: userPhoto
+        };
+      }
+      return el;
+    });
     setCanvasElements(cloned);
     setCanvasHistory([cloned]);
     setCanvasHistoryIndex(0);
@@ -859,6 +869,62 @@ export default function UserDashboard({ currentUser, onLogout }: UserDashboardPr
     );
     updateElementsAndHistory(updated);
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!selectedElementId) return;
+
+      const target = e.target as HTMLElement | null;
+      if (target) {
+        const isEditable = target.isContentEditable || 
+                           ["input", "textarea", "select"].includes(target.tagName.toLowerCase());
+        if (isEditable) return;
+      }
+
+      const keys = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
+      if (!keys.includes(e.key)) return;
+
+      e.preventDefault();
+
+      const step = e.shiftKey ? 10 : 1;
+      const el = canvasElements.find(item => item.id === selectedElementId);
+      if (!el) return;
+
+      let nextX = el.x;
+      let nextY = el.y;
+      let nextGap = el.relativeGap !== undefined ? el.relativeGap : 15;
+
+      if (e.key === "ArrowLeft") {
+        nextX -= step;
+      } else if (e.key === "ArrowRight") {
+        nextX += step;
+      } else if (e.key === "ArrowUp") {
+        if (el.relativeTo) {
+          nextGap -= step;
+        } else {
+          nextY -= step;
+        }
+      } else if (e.key === "ArrowDown") {
+        if (el.relativeTo) {
+          nextGap += step;
+        } else {
+          nextY += step;
+        }
+      }
+
+      const updated = canvasElements.map(item =>
+        item.id === selectedElementId
+          ? { ...item, x: nextX, y: nextY, relativeGap: nextGap }
+          : item
+      );
+      updateElementsAndHistory(updated);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [selectedElementId, canvasElements]);
 
   const getSortedCanvasElements = () => {
     return [...canvasElements].sort((a, b) => {
@@ -8320,7 +8386,7 @@ WhatsApp: ${whatsappKandidat}`;
                         return (
                           <div className="bg-white rounded-3xl border border-rose-250 p-5 shadow-sm space-y-4">
                             <div className="flex items-center justify-between border-b border-rose-100 pb-2">
-                                     <button
+                              <button
                                 type="button"
                                 onClick={() => {
                                   const nextElements = canvasElements.filter(e => e.id !== selectedElementId);
@@ -8330,6 +8396,29 @@ WhatsApp: ${whatsappKandidat}`;
                                 className="text-xxs font-bold text-red-600 hover:text-red-800 flex items-center gap-0.5 cursor-pointer bg-red-50 px-2 py-1 rounded"
                               >
                                 🗑️ Hapus
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (!activeEl) return;
+                                  const newId = `${activeEl.type || "el"}_${Date.now()}`;
+                                  const baseShift = 20;
+                                  const cloned = {
+                                    ...activeEl,
+                                    id: newId,
+                                    x: (activeEl.x || 0) + baseShift,
+                                    y: (activeEl.y || 0) + baseShift,
+                                    relativeTo: undefined,
+                                    relativeGap: undefined,
+                                  };
+                                  const updated = [...canvasElements, cloned];
+                                  updateElementsAndHistory(updated);
+                                  setSelectedElementId(newId);
+                                }}
+                                className="text-xxs font-bold text-sky-600 hover:text-sky-800 flex items-center gap-0.5 cursor-pointer bg-sky-50 px-2 py-1 rounded"
+                              >
+                                📑 Duplikat
                               </button>
                             </div>
 

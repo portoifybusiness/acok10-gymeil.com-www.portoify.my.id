@@ -699,6 +699,62 @@ export default function AdminDashboard({ currentUser, onLogout }: AdminDashboard
     updateCvElementsAndHistory(updated);
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!cvSelectedElementId) return;
+
+      const target = e.target as HTMLElement | null;
+      if (target) {
+        const isEditable = target.isContentEditable || 
+                           ["input", "textarea", "select"].includes(target.tagName.toLowerCase());
+        if (isEditable) return;
+      }
+
+      const keys = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
+      if (!keys.includes(e.key)) return;
+
+      e.preventDefault();
+
+      const step = e.shiftKey ? 10 : 1;
+      const el = cvCanvasElements.find(item => item.id === cvSelectedElementId);
+      if (!el) return;
+
+      let nextX = el.x;
+      let nextY = el.y;
+      let nextGap = el.relativeGap !== undefined ? el.relativeGap : 15;
+
+      if (e.key === "ArrowLeft") {
+        nextX -= step;
+      } else if (e.key === "ArrowRight") {
+        nextX += step;
+      } else if (e.key === "ArrowUp") {
+        if (el.relativeTo) {
+          nextGap -= step;
+        } else {
+          nextY -= step;
+        }
+      } else if (e.key === "ArrowDown") {
+        if (el.relativeTo) {
+          nextGap += step;
+        } else {
+          nextY += step;
+        }
+      }
+
+      const updated = cvCanvasElements.map(item =>
+        item.id === cvSelectedElementId
+          ? { ...item, x: nextX, y: nextY, relativeGap: nextGap }
+          : item
+      );
+      updateCvElementsAndHistory(updated);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [cvSelectedElementId, cvCanvasElements]);
+
   const initCvCanvasTemplate = (elements: any[], templateId: string | null = null, bgColor = "#ffffff") => {
     const cloned = JSON.parse(JSON.stringify(elements));
     setCvCanvasElements(cloned);
@@ -4799,7 +4855,30 @@ export default function AdminDashboard({ currentUser, onLogout }: AdminDashboard
                         </div>
 
                         {/* DELETE CHOSEN ELEMENT */}
-                        <div className="border-t border-slate-100 pt-3 flex justify-between gap-2.5">
+                        <div className="border-t border-slate-100 pt-3 flex items-center justify-between gap-2.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!el) return;
+                              const newId = `${el.type || 'el'}_${Date.now()}`;
+                              const baseShift = 20;
+                              const cloned = {
+                                ...el,
+                                id: newId,
+                                x: (el.x || 0) + baseShift,
+                                y: (el.y || 0) + baseShift,
+                                relativeTo: undefined,
+                                relativeGap: undefined,
+                              };
+                              const updated = [...cvCanvasElements, cloned];
+                              updateCvElementsAndHistory(updated);
+                              setCvSelectedElementId(newId);
+                            }}
+                            className="w-1/2 text-center py-2.5 border border-sky-200 bg-sky-50 text-sky-600 hover:bg-sky-100 text-xxs font-black uppercase tracking-wider rounded-xl transition cursor-pointer"
+                          >
+                            📑 Duplikat Elemen
+                          </button>
+
                           <button
                             type="button"
                             onClick={() => {
@@ -4807,7 +4886,7 @@ export default function AdminDashboard({ currentUser, onLogout }: AdminDashboard
                               updateCvElementsAndHistory(updated);
                               setCvSelectedElementId(null);
                             }}
-                            className="w-full text-center py-2.5 border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 text-xxs font-black uppercase tracking-wider rounded-xl transition cursor-pointer"
+                            className="w-1/2 text-center py-2.5 border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 text-xxs font-black uppercase tracking-wider rounded-xl transition cursor-pointer"
                           >
                             🗑️ Lenyapkan Elemen
                           </button>
