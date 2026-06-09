@@ -78,8 +78,7 @@ import {
 const app = express();
 const PORT = 3000;
 
-// Set up server-side file JSON database persistence
-const DB_FILE = path.join(process.cwd(), "portoify_db.json");
+// SQL is the primary database. Local JSON persistence is completely removed.
 
 // Helper to calculate age from birth date string "YYYY-MM-DD"
 function calculateAge(birthDateStr: string): number {
@@ -651,70 +650,6 @@ function loadLocalJsonDatabase(): DatabaseSchema {
   if (memoryDb) {
     return memoryDb;
   }
-  if (fs.existsSync(DB_FILE)) {
-    try {
-      const data = fs.readFileSync(DB_FILE, "utf-8");
-      const currentDb = JSON.parse(data);
-      if (!currentDb.packages || !Array.isArray(currentDb.packages) || currentDb.packages.length === 0) {
-        console.log("⚠️ Local JSON database loaded but packages list is empty. Auto-seeding default packages...");
-        const defaults = getSeededDefaultDb();
-        currentDb.packages = defaults.packages;
-        try {
-          fs.writeFileSync(DB_FILE, JSON.stringify(currentDb, null, 2), "utf-8");
-        } catch (we) {}
-      }
-      
-      // Auto-inject default visual Canva templates designed for direct JPG/PNG backdrop editing
-      if (currentDb.templates && Array.isArray(currentDb.templates)) {
-        const hasCanva = currentDb.templates.some((t: any) => t.id === "tpl_res_canva");
-        if (!hasCanva) {
-          console.log("⚙️ Auto-injecting default Canva visual-backdrop resume templates into database...");
-          const defaults = getSeededDefaultDb();
-          const canvaTemplates = defaults.templates.filter((t: any) => t.id.startsWith("tpl_res_canva"));
-          currentDb.templates.push(...canvaTemplates);
-          try {
-            fs.writeFileSync(DB_FILE, JSON.stringify(currentDb, null, 2), "utf-8");
-          } catch (we) {}
-        }
-      }
-
-      // Auto-migrate heavy Base64 word templates to actual files inside api/word
-      let docxMigrated = false;
-      if (currentDb.templates && Array.isArray(currentDb.templates)) {
-        const wordDir = path.join(process.cwd(), "public_html", "api", "word");
-        if (!fs.existsSync(wordDir)) {
-          fs.mkdirSync(wordDir, { recursive: true });
-        }
-        currentDb.templates.forEach((t: any) => {
-          if (t.category === "cover_letter" && t.htmlMarkup && t.htmlMarkup.startsWith("data:application/vnd.openxmlformats-officedocument")) {
-            try {
-              const matches = t.htmlMarkup.match(/^data:([A-Za-z-+\/.]+);base64,(.+)$/);
-              const base64Content = matches ? matches[2] : t.htmlMarkup.split(",")[1] || t.htmlMarkup;
-              const buffer = Buffer.from(base64Content, "base64");
-              const fileName = `word_${t.id}_${crypto.randomBytes(4).toString("hex")}.docx`;
-              const destinationPath = path.join(wordDir, fileName);
-              fs.writeFileSync(destinationPath, buffer);
-              t.htmlMarkup = `/api/word/${fileName}`;
-              docxMigrated = true;
-              console.log(`💾 Migrated templates ${t.name} to actual file: ${t.htmlMarkup}`);
-            } catch (err) {
-              console.error(`❌ Gagal migrasi template ${t.name} ke file:`, err);
-            }
-          }
-        });
-      }
-      if (docxMigrated) {
-        try {
-          fs.writeFileSync(DB_FILE, JSON.stringify(currentDb, null, 2), "utf-8");
-        } catch (we) {}
-      }
-
-      memoryDb = currentDb;
-      return currentDb;
-    } catch (e) {
-      console.error("Error parsing local Database file, restoring defaults...", e);
-    }
-  }
   const defaultDb = getSeededDefaultDb();
   memoryDb = defaultDb;
   return defaultDb;
@@ -749,11 +684,6 @@ let mysqlSaveTimeout: NodeJS.Timeout | null = null;
 function saveDb(data: DatabaseSchema) {
   pruneOrphanRecords(data);
   memoryDb = data;
-  try {
-    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), "utf-8");
-  } catch (err) {
-    console.error("Failed to write to local JSON backup:", err);
-  }
 
   if (isMySQLActive()) {
     if (mysqlSaveTimeout) {
@@ -777,11 +707,6 @@ function saveDb(data: DatabaseSchema) {
 async function saveDbImmediate(data: DatabaseSchema): Promise<{ success: boolean; error?: string }> {
   pruneOrphanRecords(data);
   memoryDb = data;
-  try {
-    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), "utf-8");
-  } catch (err) {
-    console.error("Failed to write to local JSON backup:", err);
-  }
 
   if (isMySQLActive()) {
     console.log("⚡ [Immediate Save] Synchronously saving changes to MySQL server...");
@@ -3923,7 +3848,6 @@ async function startServer() {
         const mysqlData = await loadMySQLDb();
         if (mysqlData && mysqlData.users && mysqlData.users.length > 0) {
           memoryDb = mysqlData;
-          fs.writeFileSync(DB_FILE, JSON.stringify(mysqlData, null, 2), "utf-8");
         }
       } catch (err) {
         console.error("❌ [Background Loader] Failed to poll MySQL database state:", err);
